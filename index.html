@@ -24,10 +24,23 @@ main{flex:1;position:relative;min-height:0;display:flex;justify-content:center}
 #viewer{width:100%;height:100%}
 .nav{position:absolute;top:0;bottom:0;width:12%;max-width:90px;background:none;border:0;cursor:pointer;font-size:28px;opacity:0;transition:.2s;color:var(--fg);z-index:5}
 .nav:hover{opacity:.5}#prev{left:0}#next{right:0}
-#welcome{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:6;background:var(--bg)}
-#drop{border:2px dashed var(--bd);border-radius:16px;padding:48px 36px;text-align:center;max-width:90%;cursor:pointer}
-#drop.over{border-color:var(--ac);background:var(--ui)}
-#drop h1{margin:0 0 8px;font-size:22px}#drop p{margin:6px 0;opacity:.7}
+#lib{position:absolute;inset:0;z-index:6;background:var(--bg);display:flex;flex-direction:column}
+#lib.over{outline:3px dashed var(--ac);outline-offset:-8px}
+.lh{display:flex;align-items:center;gap:8px;padding:14px 18px;flex-wrap:wrap}.lh h1{margin:0;font-size:20px;flex:1;min-width:160px}
+.lh .btn{margin:0;padding:8px 14px}.lh .btn.sec{background:var(--ui);color:var(--fg);border:1px solid var(--bd)}
+.lnote{padding:0 18px 10px;font-size:12px;opacity:.65;line-height:1.5}
+#grid{flex:1;overflow:auto;padding:6px 18px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px;align-content:start}
+#grid .empty{grid-column:1/-1}
+.card{position:relative;cursor:pointer;display:flex;flex-direction:column;gap:6px;min-width:0}
+.cv{aspect-ratio:2/3;border-radius:8px;border:1px solid var(--bd);background:var(--ui);display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;font-weight:600;overflow:hidden;box-shadow:0 2px 8px var(--sh);word-break:break-word}
+.cv.has{padding:0}.cv img{width:100%;height:100%;object-fit:cover;display:block}
+.card:hover .cv{border-color:var(--ac)}
+.ct{font-weight:600;font-size:13px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ca{font-size:12px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pb{height:4px;background:var(--bd);border-radius:2px}.pb i{display:block;height:100%;background:var(--ac);border-radius:2px}
+.bd{font-size:11px;opacity:.65}
+.dx{position:absolute;top:6px;right:6px;background:var(--bg);border:1px solid var(--bd);border-radius:50%;width:26px;height:26px;cursor:pointer;opacity:0}
+.card:hover .dx{opacity:1}@media(hover:none){.dx{opacity:1}}
 .btn{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:10px 18px;cursor:pointer;margin-top:12px}
 #prog{flex:1;accent-color:var(--ac)}#pct{min-width:120px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px;opacity:.8}
 aside{position:absolute;top:0;bottom:0;left:0;width:340px;max-width:92%;background:var(--ui);border-right:1px solid var(--bd);box-shadow:4px 0 16px var(--sh);z-index:20;display:none;flex-direction:column}
@@ -57,13 +70,14 @@ aside.open{display:flex}
 </head>
 <body>
 <header>
+  <button class="ib" id="bLib" title="Biblioteka">📚</button>
   <button class="ib" id="bMenu" title="Spis treści, zakładki, szukanie">☰ Menu</button>
   <div id="title">Czytnik EPUB</div>
   <button class="ib" id="bMark" title="Dodaj zakładkę (B)">🔖</button>
   <button class="ib" id="bSync" title="Synchronizacja między urządzeniami">☁</button>
   <button class="ib" id="bSet" title="Ustawienia">Aa</button>
   <button class="ib" id="bFull" title="Pełny ekran (F)">⛶</button>
-  <button class="ib" id="bOpen" title="Otwórz plik">📂</button>
+  <button class="ib" id="bOpen" title="Dodaj książki">＋</button>
 </header>
 <main>
   <div id="wrap">
@@ -114,20 +128,22 @@ aside.open{display:flex}
     <button class="btn" id="syOk">Zapisz i połącz</button>
     <p id="syst"></p>
   </div>
-  <div id="welcome">
-    <div id="drop">
-      <h1>📚 Czytnik EPUB</h1>
-      <p>Przeciągnij tutaj plik .epub lub kliknij, aby go wybrać.</p>
-      <p>Strzałki ← → przewracają strony, B dodaje zakładkę.</p>
-      <button class="btn">Wybierz plik</button>
+  <div id="lib">
+    <div class="lh">
+      <h1>📚 Moja biblioteka</h1>
+      <button class="btn sec" id="libBack" style="display:none">Wróć do książki</button>
+      <button class="btn sec" id="libRef" title="Odśwież listę">↻</button>
+      <button class="btn" id="libAdd">＋ Dodaj książki</button>
     </div>
+    <div class="lnote">Książki dodane tutaj zostają w tej przeglądarce. Pliki .epub z folderu books/ w repozytorium GitHub (lub z pliku books.json) pojawiają się na każdym urządzeniu. Możesz też przeciągnąć pliki .epub na tę stronę.</div>
+    <div id="grid"></div>
   </div>
 </main>
 <footer>
   <input type="range" id="prog" min="0" max="1000" value="0" disabled>
   <div id="pct">–</div>
 </footer>
-<input type="file" id="file" accept=".epub,application/epub+zip" hidden>
+<input type="file" id="file" accept=".epub,application/epub+zip" multiple hidden>
 <div id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -137,7 +153,7 @@ aside.open{display:flex}
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let S=Object.assign({fs:100,ff:'',lh:1.6,wd:800,t:'light',fl:'paginated'},store.get('epub:settings',{}));
-let book=null,rend=null,key='',marks=[],cur=null,ready=false;
+let book=null,rend=null,key='',marks=[],cur=null,ready=false,curId='';
 
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),1800)}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
@@ -181,15 +197,15 @@ $('#bMenu').onclick=()=>$('#side').classList.toggle('open');
 $$('.tabs button').forEach(b=>b.onclick=()=>{$$('.tabs button').forEach(x=>x.classList.toggle('on',x===b));$$('.pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p));if(b.dataset.p==='se')$('#q').focus()});
 
 // open file
-function pick(){$('#file').click()}
-$('#bOpen').onclick=pick;$('#drop').onclick=pick;
-$('#file').onchange=e=>{if(e.target.files[0])openFile(e.target.files[0]);e.target.value=''};
-['dragover','dragenter'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();$('#drop').classList.add('over')}));
-['dragleave','drop'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();$('#drop').classList.remove('over')}));
-document.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)openFile(f)});
+$('#bOpen').onclick=()=>$('#file').click();$('#libAdd').onclick=()=>$('#file').click();
+$('#file').onchange=e=>{addBooks(e.target.files);e.target.value=''};
+['dragover','dragenter'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();$('#lib').classList.add('over')}));
+['dragleave','drop'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();$('#lib').classList.remove('over')}));
+document.addEventListener('drop',e=>{if(e.dataTransfer.files.length)addBooks(e.dataTransfer.files)});
 
-async function openFile(file){
+async function openFile(file,id){
   try{
+    curId=id||'';
     const buf=await file.arrayBuffer();
     if(book){try{book.destroy()}catch(e){}}
     $('#viewer').innerHTML='';ready=false;cur=null;
@@ -209,12 +225,15 @@ async function openFile(file){
     applyBook();
     bindRend();
         await rend.display(pos||undefined);
-    $('#welcome').style.display='none';
+    $('#lib').style.display='none';
+    if(curId){store.set('epub:last:'+curId,Date.now());
+      thumb(book).then(async cover=>{const old=(await DB.get('meta',curId).catch(()=>null))||{};
+        await DB.put('meta',curId,Object.assign(old,{id:curId,title:meta.title||old.title||'',author:meta.creator||'',cover:cover||old.cover||''})).catch(()=>{})})}
     $$('.nav').forEach(n=>n.style.display=S.fl==='paginated'?'':'none');
     book.loaded.navigation.then(n=>renderToc(n.toc));
     $('#pct').textContent='Indeksowanie…';
     book.ready.then(()=>book.locations.generate(1200)).then(()=>{ready=true;$('#prog').disabled=false;if(cur)upd(cur)}).catch(()=>{});
-  }catch(err){console.error(err);toast('Nie udało się otworzyć EPUB: '+(err&&err.message?err.message:err));const p=$('#drop p');if(p)p.textContent='Błąd: '+(err&&err.message?err.message:err)}
+  }catch(err){console.error(err);toast('Nie udało się otworzyć EPUB: '+(err&&err.message?err.message:err));}
 }
 
 function bindRend(){
@@ -227,7 +246,7 @@ function bindRend(){
 }
 function upd(loc){
   let txt='';
-  if(ready){const p=book.locations.percentageFromCfi(loc.start.cfi);$('#prog').value=Math.round(p*1000);txt=Math.round(p*100)+'%';
+  if(ready){const p=book.locations.percentageFromCfi(loc.start.cfi);$('#prog').value=Math.round(p*1000);txt=Math.round(p*100)+'%';if(curId)store.set('epub:prog:'+curId,p);
     const n=book.locations.locationFromCfi(loc.start.cfi),t=book.locations.length();if(typeof n==='number')txt+=' · '+(n+1)+'/'+t}
   $('#pct').textContent=txt||'–';
   $('#bMark').classList.toggle('on',isMarked(loc)>=0);
@@ -379,22 +398,95 @@ $('#syOk').onclick=async()=>{
   catch(e){stat('✗ '+e.message)}
 };
 
-// automatyczne otwieranie book.epub z tego samego folderu (np. GitHub Pages)
-(async function(){
-  const d=$('#drop p');
-  const name=new URLSearchParams(location.search).get('book')||'book.epub';
-  const url=new URL(name,location.href).href;
-  if(location.protocol==='file:'){d.textContent='Strona otwarta z dysku nie może sama wczytać '+name+'. Wgraj ją na GitHub Pages albo wybierz plik ręcznie.';return}
-  try{
-    d.textContent='Wczytywanie '+name+'…';
-    const r=await fetch(url,{cache:'no-cache'});
-    if(!r.ok)throw new Error('serwer zwrócił '+r.status+' dla '+url);
-    const b=await r.blob();
-    if(b.size<100)throw new Error('plik jest pusty lub uszkodzony');
-    await openFile(new File([b],name,{type:'application/epub+zip'}));
-  }catch(e){
-    d.textContent='Nie udało się wczytać '+name+' ('+(e.message||e)+'). Możesz wybrać plik ręcznie.';
+// ===== biblioteka =====
+const DB={
+  open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('epubreader',1);r.onupgradeneeded=()=>{r.result.createObjectStore('files');r.result.createObjectStore('meta')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
+  async tx(st,mode,fn){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction(st,mode),rq=fn(t.objectStore(st));t.oncomplete=()=>res(rq&&rq.result);t.onerror=()=>rej(t.error)})},
+  get(st,k){return this.tx(st,'readonly',o=>o.get(k))},put(st,k,v){return this.tx(st,'readwrite',o=>o.put(v,k))},
+  del(st,k){return this.tx(st,'readwrite',o=>o.delete(k))},all(st){return this.tx(st,'readonly',o=>o.getAll())}
+};
+async function thumb(b){
+  try{const u=await b.coverUrl();if(!u)return '';const img=new Image();img.src=u;await img.decode();
+    const w=200,h=Math.round(img.naturalHeight*w/img.naturalWidth),c=document.createElement('canvas');c.width=w;c.height=h;
+    c.getContext('2d').drawImage(img,0,0,w,h);return c.toDataURL('image/jpeg',.7)}catch(e){return ''}
+}
+async function readMeta(buf,name){
+  const b=ePub(buf);const m=await b.loaded.metadata;const cover=await thumb(b);try{b.destroy()}catch(e){}
+  return {title:m.title||name.replace(/\.epub$/i,''),author:m.creator||'',cover};
+}
+function nice(path){return decodeURIComponent(path.split('/').pop()).replace(/\.epub$/i,'').replace(/[_]+/g,' ')}
+async function repoList(force){
+  const c=store.get('epub:repolist',null);
+  if(!force&&c&&Date.now()-c.ts<600000)return c.list;
+  const out=new Map(),tasks=[];
+  const add=path=>{if(!path||!/\.epub$/i.test(path))return;
+    out.set(path,{id:'repo:'+path,url:new URL(path.split('/').map(encodeURIComponent).join('/'),location.href).href,title:nice(path)})};
+  tasks.push(fetch(new URL('books.json',location.href),{cache:'no-cache'}).then(r=>r.ok?r.json():[]).then(a=>Array.isArray(a)&&a.forEach(x=>add(typeof x==='string'?x:x&&x.file))).catch(()=>{}));
+  tasks.push(fetch(new URL('book.epub',location.href),{method:'HEAD',cache:'no-cache'}).then(r=>{if(r.ok)add('book.epub')}).catch(()=>{}));
+  const h=location.hostname;
+  if(h.endsWith('.github.io')){
+    const owner=h.split('.')[0],seg=location.pathname.split('/')[1],repo=(seg&&!seg.includes('.'))?seg:owner+'.github.io';
+    ['','books'].forEach(d=>tasks.push(fetch('https://api.github.com/repos/'+owner+'/'+repo+'/contents/'+d).then(r=>r.ok?r.json():[]).then(a=>Array.isArray(a)&&a.forEach(f=>f.type==='file'&&add(f.path))).catch(()=>{})));
   }
+  await Promise.all(tasks);
+  let list=[...out.values()];
+  if(!list.length&&c)list=c.list;
+  store.set('epub:repolist',{ts:Date.now(),list});
+  return list;
+}
+async function showLib(force){
+  $('#lib').style.display='flex';
+  $('#libBack').style.display=book?'':'none';
+  const g=$('#grid');g.innerHTML='<div class="empty">Ładowanie…</div>';
+  let metas=[];try{metas=await DB.all('meta')}catch(e){}
+  const byId={};metas.forEach(m=>byId[m.id]=m);
+  const items=metas.filter(m=>m.source==='local');
+  (await repoList(force)).forEach(r=>items.push(Object.assign({},r,byId[r.id]||{},{id:r.id,url:r.url,source:'repo'})));
+  items.sort((a,b)=>(store.get('epub:last:'+b.id,0)-store.get('epub:last:'+a.id,0))||String(a.title).localeCompare(String(b.title),'pl'));
+  g.innerHTML='';
+  if(!items.length){g.innerHTML='<div class="empty">Biblioteka jest pusta. Kliknij Dodaj książki albo wrzuć pliki .epub do folderu books/ w repozytorium.</div>';return}
+  items.forEach(it=>{
+    const pr=store.get('epub:prog:'+it.id,0),d=document.createElement('div');d.className='card';
+    d.innerHTML='<div class="cv'+(it.cover?' has':'')+'">'+(it.cover?'<img alt="" src="'+it.cover+'">':esc(it.title||'Książka'))+'</div>'
+      +'<div class="ct">'+esc(it.title||'Książka')+'</div>'+(it.author?'<div class="ca">'+esc(it.author)+'</div>':'')
+      +'<div class="pb"><i style="width:'+Math.round(pr*100)+'%"></i></div>'
+      +'<div class="bd">'+(pr?Math.round(pr*100)+'% · ':'')+(it.source==='local'?'To urządzenie':'Repozytorium')+'</div>';
+    d.onclick=()=>openItem(it);
+    if(it.source==='local'){const x=document.createElement('button');x.className='dx';x.textContent='✕';x.title='Usuń z biblioteki';
+      x.onclick=async e=>{e.stopPropagation();if(!confirm('Usunąć tę książkę z biblioteki na tym urządzeniu?'))return;
+        try{await DB.del('files',it.id);await DB.del('meta',it.id)}catch(err){}showLib()};d.appendChild(x)}
+    g.appendChild(d);
+  });
+}
+async function openItem(it){
+  try{
+    let blob;
+    if(it.source==='local'){blob=await DB.get('files',it.id);if(!blob)throw new Error('brak pliku w pamięci przeglądarki')}
+    else{toast('Wczytywanie…');const r=await fetch(it.url,{cache:'no-cache'});if(!r.ok)throw new Error('serwer zwrócił '+r.status);blob=await r.blob()}
+    await openFile(new File([blob],(it.title||'book')+'.epub',{type:'application/epub+zip'}),it.id);
+  }catch(e){toast('Nie udało się otworzyć: '+(e.message||e))}
+}
+async function addBooks(files){
+  files=[...files].filter(f=>/\.epub$/i.test(f.name));
+  if(!files.length){toast('Wybierz plik .epub');return}
+  let last=null;
+  for(const f of files){
+    const id='local:'+f.name+'|'+f.size+'|'+f.lastModified;
+    try{
+      const m=await readMeta(await f.arrayBuffer(),f.name);
+      try{await DB.put('files',id,f);await DB.put('meta',id,Object.assign({id,source:'local'},m))}catch(e){toast('Nie można zapisać w bibliotece (tryb prywatny?)')}
+      last={f,id};
+    }catch(e){toast('Nie udało się dodać: '+f.name)}
+  }
+  if(!last)return;
+  if(files.length===1)openFile(last.f,last.id);else{toast('Dodano książki: '+files.length);showLib()}
+}
+$('#bLib').onclick=()=>showLib();$('#libRef').onclick=()=>showLib(true);
+$('#libBack').onclick=()=>{$('#lib').style.display='none'};
+(function(){
+  const b=new URLSearchParams(location.search).get('book');
+  showLib();
+  if(b)openItem({source:'repo',id:'repo:'+b,title:nice(b),url:new URL(b,location.href).href});
 })();
 })();
 </script>
