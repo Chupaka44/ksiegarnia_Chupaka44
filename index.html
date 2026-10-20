@@ -42,8 +42,9 @@ aside.open{display:flex}
 .row{display:flex;gap:6px;align-items:center}.row .it{flex:1}
 .x{background:none;border:0;cursor:pointer;opacity:.6;padding:6px}
 #q{width:100%;padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);margin-bottom:8px}
-#set{position:absolute;top:8px;right:8px;width:310px;max-width:calc(100% - 16px);background:var(--ui);border:1px solid var(--bd);border-radius:12px;box-shadow:0 8px 24px var(--sh);padding:14px;z-index:30;display:none}
-#set.open{display:block}
+#set,#sy{position:absolute;top:8px;right:8px;width:310px;max-width:calc(100% - 16px);background:var(--ui);border:1px solid var(--bd);border-radius:12px;box-shadow:0 8px 24px var(--sh);padding:14px;z-index:30;display:none}
+#set.open,#sy.open{display:block}
+#sy label{display:block;font-size:12px;opacity:.75;margin:10px 0 4px}#sy input{width:100%;padding:8px;background:var(--bg);border:1px solid var(--bd);border-radius:6px}#sy p{font-size:12px;opacity:.85;margin:6px 0;line-height:1.5}#sy a{color:var(--ac)}
 #set label{display:block;font-size:12px;opacity:.75;margin:10px 0 4px}
 #set select,#set input[type=range]{width:100%}#set select{padding:6px;background:var(--bg);border:1px solid var(--bd);border-radius:6px}
 #set input[type=range]{accent-color:var(--ac)}
@@ -59,6 +60,7 @@ aside.open{display:flex}
   <button class="ib" id="bMenu" title="Spis treści, zakładki, szukanie">☰ Menu</button>
   <div id="title">Czytnik EPUB</div>
   <button class="ib" id="bMark" title="Dodaj zakładkę (B)">🔖</button>
+  <button class="ib" id="bSync" title="Synchronizacja między urządzeniami">☁</button>
   <button class="ib" id="bSet" title="Ustawienia">Aa</button>
   <button class="ib" id="bFull" title="Pełny ekran (F)">⛶</button>
   <button class="ib" id="bOpen" title="Otwórz plik">📂</button>
@@ -102,6 +104,15 @@ aside.open{display:flex}
     </div>
     <label>Tryb czytania</label>
     <select id="fl"><option value="paginated">Strony (lewo/prawo)</option><option value="scrolled-doc">Przewijanie</option></select>
+  </div>
+  <div id="sy">
+    <b>Synchronizacja między urządzeniami</b>
+    <p>Postęp czytania, zakładki i ustawienia zapisują się w prywatnym Gist na Twoim koncie GitHub.</p>
+    <p>1. <a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=czytnik-epub" target="_blank" rel="noopener">Utwórz token</a> z uprawnieniem gist i go skopiuj.<br>2. Wklej go poniżej. Na każdym urządzeniu wpisz ten sam token.</p>
+    <label>Token GitHub</label>
+    <input id="tok" type="password" autocomplete="off" placeholder="ghp_…">
+    <button class="btn" id="syOk">Zapisz i połącz</button>
+    <p id="syst"></p>
   </div>
   <div id="welcome">
     <div id="drop">
@@ -151,7 +162,7 @@ function applyBook(){
     try{rend.getContents().forEach(c=>c.content.style.removeProperty('font-family'))}catch(e){}}
   try{rend.themes.default({'a':{color:'inherit !important'},'img':{'max-width':'100% !important'}})}catch(e){}
 }
-function save(){store.set('epub:settings',S)}
+function save(){S.ts=Date.now();store.set('epub:settings',S);syncPush()}
 applyUI();
 
 // settings events
@@ -188,11 +199,16 @@ async function openFile(file){
     $('#title').textContent=(meta.title||file.name)+(meta.creator?' – '+meta.creator:'');
     document.title=meta.title||'Czytnik EPUB';
     marks=store.get(key+':marks',[]);renderMarks();
+    let pos=store.get(key+':pos',null);
+    const re=await syncPull();
+    if(re){
+      if(re.cfi&&re.ts>store.get(key+':ts',0)){pos=re.cfi;store.set(key+':pos',pos);store.set(key+':ts',re.ts);toast('Wznowiono z miejsca z innego urządzenia')}
+      if(re.marks&&re.mts>store.get(key+':mts',0)){marks=re.marks;store.set(key+':marks',marks);store.set(key+':mts',re.mts);renderMarks()}
+    }
     rend=book.renderTo('viewer',{width:'100%',height:'100%',flow:S.fl,spread:'none',allowScriptedContent:false});
     applyBook();
     bindRend();
-    const pos=store.get(key+':pos',null);
-    await rend.display(pos||undefined);
+        await rend.display(pos||undefined);
     $('#welcome').style.display='none';
     $$('.nav').forEach(n=>n.style.display=S.fl==='paginated'?'':'none');
     book.loaded.navigation.then(n=>renderToc(n.toc));
@@ -202,7 +218,7 @@ async function openFile(file){
 }
 
 function bindRend(){
-  rend.on('relocated',loc=>{cur=loc;store.set(key+':pos',loc.start.cfi);upd(loc)});
+  rend.on('relocated',loc=>{cur=loc;store.set(key+':pos',loc.start.cfi);store.set(key+':ts',Date.now());upd(loc);syncPush()});
   rend.on('keyup',keys);
   let sx=0,sy=0;
   rend.on('touchstart',e=>{sx=e.changedTouches[0].screenX;sy=e.changedTouches[0].screenY});
@@ -263,7 +279,7 @@ function toggleMark(){
     marks.push({cfi:cur.start.cfi,label:chapterOf(cur)||'Zakładka',pct,date:new Date().toLocaleString('pl-PL')});
     toast('Dodano zakładkę');
   }
-  store.set(key+':marks',marks);renderMarks();upd(cur);
+  store.set(key+':marks',marks);store.set(key+':mts',Date.now());renderMarks();upd(cur);syncPush();
 }
 $('#bMark').onclick=toggleMark;
 function renderMarks(){
@@ -275,7 +291,7 @@ function renderMarks(){
     b.innerHTML=esc(m.label)+'<small>'+esc(m.pct||'')+' · '+esc(m.date)+'</small>';
     b.onclick=()=>{rend.display(m.cfi);if(innerWidth<700)$('#side').classList.remove('open')};
     const x=document.createElement('button');x.className='x';x.textContent='✕';x.title='Usuń';
-    x.onclick=()=>{marks.splice(i,1);store.set(key+':marks',marks);renderMarks();if(cur)upd(cur)};
+    x.onclick=()=>{marks.splice(i,1);store.set(key+':marks',marks);store.set(key+':mts',Date.now());renderMarks();if(cur)upd(cur);syncPush()};
     r.append(b,x);box.appendChild(r);
   });
 }
@@ -300,6 +316,69 @@ $('#q').onkeydown=async e=>{
     });
   }catch(err){res.innerHTML='<div class="empty">Błąd wyszukiwania.</div>'}
 };
+// synchronizacja przez prywatny Gist na koncie GitHub
+const SY={tok:store.get('epub:token',''),gid:store.get('epub:gid',''),t:null};
+function stat(m){$('#syst').textContent=m}
+async function gh(path,opt){
+  const r=await fetch('https://api.github.com'+path,Object.assign({headers:{Authorization:'Bearer '+SY.tok,Accept:'application/vnd.github+json','Content-Type':'application/json'}},opt||{}));
+  if(!r.ok)throw new Error('GitHub '+r.status+(r.status===401?' (zły token)':''));
+  return r.json();
+}
+async function syGet(){
+  if(!SY.gid){
+    const l=await gh('/gists?per_page=100');
+    const g=l.find(x=>x.description==='epub-reader-sync');
+    SY.gid=g?g.id:(await gh('/gists',{method:'POST',body:JSON.stringify({description:'epub-reader-sync',public:false,files:{'sync.json':{content:'{}'}}})})).id;
+    store.set('epub:gid',SY.gid);
+  }
+  const g=await gh('/gists/'+SY.gid);const f=g.files['sync.json'];
+  let t=f.content;if(f.truncated)t=await(await fetch(f.raw_url)).text();
+  try{return JSON.parse(t||'{}')}catch(e){return {}}
+}
+async function syncPull(){
+  if(!SY.tok)return null;
+  try{
+    const d=await Promise.race([syGet(),new Promise((_,j)=>setTimeout(()=>j(new Error('przekroczono czas')),7000))]);
+    stat('✓ Połączono');
+    if(d.settings&&d.settings.ts>(S.ts||0)){Object.assign(S,d.settings);store.set('epub:settings',S);applyUI()}
+    return (d.books&&d.books[key])||null;
+  }catch(e){stat('✗ '+e.message);return null}
+}
+async function syncFlush(){
+  try{
+    const d=await syGet();d.books=d.books||{};
+    if(S.ts&&!(d.settings&&d.settings.ts>S.ts))d.settings=S;
+    if(key&&cur){
+      const old=d.books[key]||{};
+      const e={cfi:store.get(key+':pos',null),ts:store.get(key+':ts',0),pct:ready?book.locations.percentageFromCfi(cur.start.cfi):old.pct,marks:old.marks||[],mts:old.mts||0};
+      const lm=store.get(key+':mts',0);
+      if(lm>=e.mts){e.marks=marks;e.mts=lm}
+      if(old.ts>e.ts){e.cfi=old.cfi;e.ts=old.ts;e.pct=old.pct}
+      d.books[key]=e;
+    }
+    await gh('/gists/'+SY.gid,{method:'PATCH',body:JSON.stringify({files:{'sync.json':{content:JSON.stringify(d)}}})});
+    stat('✓ Zapisano '+new Date().toLocaleTimeString('pl-PL'));
+  }catch(e){stat('✗ '+e.message)}
+}
+function syncPush(){if(!SY.tok)return;clearTimeout(SY.t);SY.t=setTimeout(()=>{SY.t=null;syncFlush()},2000)}
+document.addEventListener('visibilitychange',async()=>{
+  if(!SY.tok||!book)return;
+  if(document.hidden){if(SY.t){clearTimeout(SY.t);SY.t=null;syncFlush()}return}
+  const re=await syncPull();
+  if(re&&re.cfi&&re.ts>store.get(key+':ts',0)){store.set(key+':pos',re.cfi);store.set(key+':ts',re.ts);rend.display(re.cfi);toast('Przeskoczono do pozycji z innego urządzenia')}
+});
+$('#bSync').onclick=e=>{e.stopPropagation();$('#sy').classList.toggle('open')};
+document.addEventListener('click',e=>{if(!e.target.closest('#sy')&&!e.target.closest('#bSync'))$('#sy').classList.remove('open')});
+if(SY.tok){$('#tok').value='••••••••';stat('Synchronizacja włączona')}
+$('#syOk').onclick=async()=>{
+  const v=$('#tok').value.trim();
+  if(!v){SY.tok='';store.set('epub:token','');stat('Synchronizacja wyłączona');return}
+  if(!v.startsWith('•')){SY.tok=v;SY.gid='';store.set('epub:token',v);store.set('epub:gid','')}
+  stat('Łączenie…');
+  try{await syGet();stat('✓ Połączono');if(book&&cur){store.set(key+':ts',store.get(key+':ts',0)||Date.now());syncPush()}}
+  catch(e){stat('✗ '+e.message)}
+};
+
 // automatyczne otwieranie book.epub z tego samego folderu (np. GitHub Pages)
 (async function(){
   const d=$('#drop');
