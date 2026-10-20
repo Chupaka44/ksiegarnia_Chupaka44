@@ -143,7 +143,7 @@
       <input id="url" type="text" placeholder="/filmy/ lub /filmy/film.mp4" aria-label="Adres na serwerze">
       <button id="load">Wczytaj</button>
     </div>
-    <p class="hint">Adres na serwerze: plik albo katalog z włączonym listingiem (autoindex). Podkatalogi (do 3 poziomów) stają się osobnymi kategoriami.</p>
+    <p class="hint">Adres na serwerze: plik, katalog z włączonym listingiem (autoindex) albo plik playlist.json. Podkatalogi (do 3 poziomów) stają się osobnymi kategoriami.</p>
 
     <details class="tools" open>
       <summary>Kategorie i sortowanie</summary>
@@ -268,8 +268,29 @@
     }
   }
 
+  // playlist.json: tablica ścieżek ["filmy/Serial/01.mp4", ...] albo obiektów {src, name?, cat?}
+  async function addManifest(u, silent) {
+    const res = await fetch(u.href, { cache: 'no-cache' });
+    if (!res.ok) { if (silent) return; throw new Error('Nie można pobrać ' + u.pathname + ' (' + res.status + ').'); }
+    const data = await res.json();
+    const list = (Array.isArray(data) ? data : data.items || [])
+      .map(x => typeof x === 'string' ? { src: x } : x)
+      .filter(x => x && x.src);
+    if (!list.length) { if (silent) return; throw new Error('Plik ' + u.pathname + ' nie zawiera żadnych filmów.'); }
+    const urls = list.map(x => new URL(x.src, u.href));
+    const dirs = urls.map(p => decodeURIComponent(p.pathname).split('/').slice(0, -1));
+    let common = Math.min(...dirs.map(d => d.length)) - 1;
+    dirs.forEach(d => { let k = 0; while (k < common && d[k] === dirs[0][k]) k++; common = k; });
+    addEntries(list.map((x, i) => ({
+      name: x.name || decodeURIComponent(urls[i].pathname.split('/').pop()),
+      src: urls[i].href,
+      dir: x.cat || dirs[i].slice(common).join('/')
+    })).filter(e => EXT.test(e.src.split('?')[0])));
+  }
+
   async function addUrl(raw) {
     const u = new URL(raw.trim(), location.href);
+    if (/\.json$/i.test(u.pathname)) return addManifest(u, false);
     if (EXT.test(u.pathname)) {
       const parts = u.pathname.split('/');
       const dir = decodeURIComponent(parts[parts.length - 2] || '');
@@ -549,6 +570,8 @@
   render();
   // ?src=/filmy/ w adresie strony wczyta katalog lub plik od razu
   new URLSearchParams(location.search).getAll('src').forEach(s => addUrl(s).catch(err => say(err.message)));
+  // pierwsza wizyta: jeśli obok strony leży playlist.json, wczytaj go automatycznie
+  if (!flat().length) addManifest(new URL('playlist.json', location.href), true).catch(() => {});
 })();
 </script>
 </body>
