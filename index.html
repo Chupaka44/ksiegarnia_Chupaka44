@@ -22,19 +22,13 @@
     color: var(--text);
     font: 15px/1.5 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-columns: minmax(0, 1fr) 380px;
     grid-template-rows: 100%;
   }
   main { padding: 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; overflow: auto; }
   .stage {
-    background: #000;
-    border-radius: 10px;
-    overflow: hidden;
-    position: relative;
-    aspect-ratio: 16 / 9;
-    max-height: calc(100vh - 150px);
-    width: 100%;
-    margin: 0 auto;
+    background: #000; border-radius: 10px; overflow: hidden; position: relative;
+    aspect-ratio: 16 / 9; max-height: calc(100vh - 150px); width: 100%; margin: 0 auto;
   }
   video { width: 100%; height: 100%; display: block; background: #000; }
   .empty {
@@ -50,36 +44,56 @@
     border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; cursor: pointer;
   }
   button:hover, .btn:hover, select:hover { border-color: var(--muted); }
-  button.primary, .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   input[type=file] { display: none; }
   label.check { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); cursor: pointer; }
-  aside {
-    background: var(--panel); border-left: 1px solid var(--line);
-    display: flex; flex-direction: column; min-height: 0;
-  }
+  .hint { color: var(--muted); font-size: 13px; margin: 0; }
+
+  aside { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; min-height: 0; }
   aside header { padding: 16px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
   aside h1 { font-size: 16px; margin: 0; }
-  .url { display: flex; gap: 6px; }
-  .url input {
+  .field { display: grid; gap: 4px; color: var(--muted); font-size: 13px; }
+  .field select { width: 100%; background: var(--bg); }
+  .row { display: flex; gap: 6px; }
+  .row input {
     flex: 1; min-width: 0; font: inherit; color: var(--text); background: var(--bg);
     border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
   }
-  .hint { color: var(--muted); font-size: 13px; margin: 0; }
-  ol { list-style: none; margin: 0; padding: 8px; overflow: auto; flex: 1; }
-  li {
-    display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 8px;
-    cursor: pointer; border: 1px solid transparent;
-  }
+  details.tools { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  details.tools summary { cursor: pointer; font-weight: 600; }
+  details.tools[open] summary { margin-bottom: 10px; }
+  details.tools > div { display: grid; gap: 10px; }
+  .msg { padding: 8px 16px 0; color: var(--muted); font-size: 13px; min-height: 1.9em; }
+
+  #list { padding: 8px; display: grid; gap: 8px; }
+  .cat { border: 1px solid var(--line); border-radius: 10px; background: #142125; }
+  .cat.over { border-color: var(--accent); background: #1d2f35; }
+  .cat-head { display: flex; align-items: center; gap: 4px; padding: 6px 6px 6px 8px; }
+  .cat-head .tw { background: none; border: 0; padding: 2px 6px; color: var(--muted); }
+  .cat-name { flex: 1; font-weight: 600; overflow-wrap: anywhere; cursor: pointer; }
+  .cat-count { color: var(--muted); font-size: 13px; margin-right: 4px; }
+  .ic { background: none; border: 0; color: var(--muted); padding: 2px 6px; line-height: 1.2; border-radius: 6px; }
+  .ic:hover { color: var(--text); background: #1e3035; }
+  .ic:disabled { opacity: .3; cursor: default; }
+  ol.items { list-style: none; margin: 0; padding: 0 6px 6px; }
+  ol.items:empty::after { content: "Pusta kategoria – przeciągnij tu film albo użyj ⇄ przy filmie."; display: block; color: var(--muted); font-size: 13px; padding: 6px 8px; }
+  li { display: flex; gap: 6px; align-items: center; padding: 6px 8px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
   li:hover { background: #1e3035; }
   li.active { background: #243a40; border-color: var(--accent); }
   li .name { flex: 1; overflow-wrap: anywhere; font-size: 14px; }
+  li select.mv {
+    appearance: none; -webkit-appearance: none; width: 30px; padding: 2px 0; text-align: center;
+    text-align-last: center; background: none; border: 0; color: var(--muted); font-size: 15px;
+  }
+  li select.mv:hover { color: var(--text); background: #1e3035; }
   li .rm { background: none; border: 0; color: var(--muted); padding: 2px 8px; font-size: 18px; line-height: 1; }
   li .rm:hover { color: var(--text); }
-  .msg { padding: 0 16px 12px; color: var(--muted); font-size: 13px; min-height: 1.5em; }
+  li.dragging { opacity: .4; }
+
   @media (max-width: 800px) {
     body { grid-template-columns: 1fr; grid-template-rows: auto auto; height: auto; }
-    aside { border-left: 0; border-top: 1px solid var(--line); max-height: 60vh; }
+    aside { border-left: 0; border-top: 1px solid var(--line); max-height: 70vh; }
     .stage { max-height: none; }
   }
 </style>
@@ -104,125 +118,339 @@
       <option value="2.5">2,5×</option><option value="3">3×</option>
       <option value="4">4×</option>
     </select>
-    <label class="check"><input type="checkbox" id="auto" checked style="display:inline"> Następny automatycznie</label>
-    <label class="check"><input type="checkbox" id="loop" style="display:inline"> Zapętl</label>
+    <label class="check"><input type="checkbox" id="auto" checked> Następny automatycznie</label>
+    <label class="check"><input type="checkbox" id="loop"> Zapętl</label>
   </div>
   <p class="hint">Skróty: spacja – odtwarzaj/pauza, ← → – przewiń 10 s, ↑ ↓ – głośność, F – pełny ekran, M – wycisz, N / P – następny / poprzedni, [ ] – wolniej / szybciej, \ – prędkość 1×.</p>
 </main>
 
 <aside>
   <header>
-    <h1>Lista odtwarzania</h1>
+    <h1 id="title">Lista odtwarzania</h1>
     <div class="bar">
       <label class="btn primary" for="files">Dodaj pliki</label>
       <label class="btn" for="folder">Dodaj folder</label>
-      <button id="clear">Wyczyść</button>
+      <button id="clear">Wyczyść wszystko</button>
     </div>
     <input type="file" id="files" accept="video/*,.mkv,.avi,.mov" multiple>
     <input type="file" id="folder" webkitdirectory multiple>
-    <div class="url">
+
+    <label class="field">Dodawaj do kategorii
+      <select id="target"></select>
+    </label>
+
+    <div class="row">
       <input id="url" type="text" placeholder="/filmy/ lub /filmy/film.mp4" aria-label="Adres na serwerze">
       <button id="load">Wczytaj</button>
     </div>
-    <p class="hint">Adres na serwerze: link do pliku albo do katalogu z włączonym listingiem (autoindex).</p>
+    <p class="hint">Adres na serwerze: plik albo katalog z włączonym listingiem (autoindex). Podkatalogi (do 3 poziomów) stają się osobnymi kategoriami.</p>
+
+    <details class="tools" open>
+      <summary>Kategorie i sortowanie</summary>
+      <div>
+        <div class="row">
+          <input id="newcat" type="text" placeholder="Nazwa nowej kategorii" aria-label="Nazwa nowej kategorii">
+          <button id="addcat">Utwórz</button>
+        </div>
+        <div class="bar">
+          <select id="sortcats" aria-label="Sortuj kategorie">
+            <option value="">Sortuj kategorie…</option>
+            <option value="az">Nazwa A–Z</option>
+            <option value="za">Nazwa Z–A</option>
+            <option value="many">Najwięcej filmów</option>
+            <option value="few">Najmniej filmów</option>
+          </select>
+          <select id="sortitems" aria-label="Sortuj filmy">
+            <option value="">Sortuj filmy…</option>
+            <option value="az">Nazwa A–Z</option>
+            <option value="za">Nazwa Z–A</option>
+          </select>
+          <button id="collapse">Zwiń / rozwiń</button>
+        </div>
+        <p class="hint">Kolejność kategorii zmienisz strzałkami ▲ ▼. Film przeniesiesz do innej kategorii przyciskiem ⇄ albo przeciągając go na nagłówek.</p>
+      </div>
+    </details>
   </header>
   <div class="msg" id="msg"></div>
-  <ol id="list"></ol>
+  <div id="list"></div>
 </aside>
 
 <script>
 (() => {
   const EXT = /\.(mp4|m4v|webm|ogv|ogg|mov|mkv|avi|ts|mpg|mpeg)$/i;
-  const v = document.getElementById('v');
-  const list = document.getElementById('list');
-  const now = document.getElementById('now');
-  const empty = document.getElementById('empty');
-  const msg = document.getElementById('msg');
+  const UNC = 'Bez kategorii';
+  const STORE = 'wideo-odtwarzacz-v1';
+  const collator = new Intl.Collator('pl', { numeric: true, sensitivity: 'base' });
   const $ = id => document.getElementById(id);
+  const v = $('v'), now = $('now'), empty = $('empty'), msg = $('msg'), listEl = $('list');
 
-  let items = [];   // { name, src, blob }
-  let cur = -1;
+  let cats = [];      // [{ name, collapsed, items: [{ name, src, blob }] }]
+  let cur = null;     // aktualnie odtwarzany element
+  let dragItem = null;
 
   const say = t => { msg.textContent = t || ''; };
-  const natural = (a, b) => a.name.localeCompare(b.name, 'pl', { numeric: true, sensitivity: 'base' });
+  const findCat = n => cats.find(c => c.name === n);
+  const flat = () => cats.flatMap(c => c.items);
+  const catOf = item => cats.find(c => c.items.includes(item));
+
+  function getCat(name) {
+    name = (name || '').trim() || UNC;
+    let c = findCat(name);
+    if (!c) { c = { name, collapsed: false, items: [] }; cats.push(c); }
+    return c;
+  }
+
+  /* ---------- zapis (tylko pliki z serwera; pliki z dysku nie przetrwają odświeżenia) ---------- */
+  function save() {
+    try {
+      const data = cats.map(c => ({
+        name: c.name, collapsed: c.collapsed,
+        items: c.items.filter(i => !i.blob).map(i => ({ name: i.name, src: i.src }))
+      })).filter(c => c.items.length || c.name !== UNC);
+      localStorage.setItem(STORE, JSON.stringify(data));
+    } catch (e) {}
+  }
+  function restore() {
+    try {
+      const data = JSON.parse(localStorage.getItem(STORE) || '[]');
+      data.forEach(d => {
+        const c = getCat(d.name);
+        c.collapsed = !!d.collapsed;
+        (d.items || []).forEach(i => c.items.push({ name: i.name, src: i.src, blob: false }));
+      });
+    } catch (e) {}
+  }
+
+  /* ---------- dodawanie ---------- */
+  function addEntries(entries) {
+    const forced = $('target').value;
+    const known = new Set(flat().filter(i => !i.blob).map(i => i.src));
+    entries.sort((a, b) => collator.compare(a.dir || '', b.dir || '') || collator.compare(a.name, b.name));
+    let added = 0, first = null;
+    entries.forEach(e => {
+      if (!e.blob && known.has(e.src)) return;
+      const item = { name: e.name, src: e.src, blob: !!e.blob };
+      getCat(forced || e.dir).items.push(item);
+      if (!first) first = item;
+      added++;
+    });
+    say(added ? 'Dodano filmów: ' + added : 'Nic nowego do dodania.');
+    if (first && !cur) play(first); else render();
+  }
 
   function addFiles(fileList) {
     const files = [...fileList].filter(f => f.type.startsWith('video/') || EXT.test(f.name));
     if (!files.length) { say('Nie znaleziono plików wideo.'); return; }
-    const fresh = files.map(f => ({ name: f.webkitRelativePath || f.name, src: URL.createObjectURL(f), blob: true }));
-    fresh.sort(natural);
-    items.push(...fresh);
-    say('Dodano: ' + fresh.length);
-    render();
-    if (cur < 0) play(items.length - fresh.length);
+    addEntries(files.map(f => ({
+      name: f.name,
+      src: URL.createObjectURL(f),
+      blob: true,
+      dir: f.webkitRelativePath ? f.webkitRelativePath.split('/').slice(0, -1).join('/') : ''
+    })));
+  }
+
+  async function crawl(href, depth, out, rootParent) {
+    const res = await fetch(href);
+    if (!res.ok) throw new Error('Serwer odpowiedział: ' + res.status);
+    const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+    const base = new URL(href);
+    const label = decodeURIComponent(base.pathname.slice(rootParent.length)).replace(/\/+$/, '') || 'Serwer';
+    const links = [...doc.querySelectorAll('a[href]')]
+      .map(a => new URL(a.getAttribute('href'), base))
+      .filter(x => x.origin === base.origin && !x.search && !x.hash);
+    for (const x of links) {
+      if (EXT.test(x.pathname)) {
+        out.push({ name: decodeURIComponent(x.pathname.split('/').pop()), src: x.href, dir: label });
+      } else if (depth < 3 && x.pathname.endsWith('/') &&
+                 x.pathname.startsWith(base.pathname) && x.pathname.length > base.pathname.length) {
+        await crawl(x.href, depth + 1, out, rootParent);
+      }
+    }
   }
 
   async function addUrl(raw) {
     const u = new URL(raw.trim(), location.href);
     if (EXT.test(u.pathname)) {
-      items.push({ name: decodeURIComponent(u.pathname.split('/').pop()), src: u.href });
-      render(); if (cur < 0) play(items.length - 1); say('Dodano 1 plik.');
+      const parts = u.pathname.split('/');
+      const dir = decodeURIComponent(parts[parts.length - 2] || '');
+      addEntries([{ name: decodeURIComponent(parts.pop()), src: u.href, dir }]);
       return;
     }
-    // katalog – parsujemy listing HTML (nginx / Apache / python http.server)
     say('Wczytywanie katalogu…');
-    const res = await fetch(u.href);
-    if (!res.ok) throw new Error('Serwer odpowiedział: ' + res.status);
-    const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
-    const found = [...doc.querySelectorAll('a[href]')]
-      .map(a => new URL(a.getAttribute('href'), u.href))
-      .filter(x => x.origin === u.origin && EXT.test(x.pathname))
-      .map(x => ({ name: decodeURIComponent(x.pathname.split('/').pop()), src: x.href }));
-    if (!found.length) throw new Error('W tym katalogu nie ma filmów albo listing jest wyłączony.');
-    found.sort(natural);
-    const start = items.length;
-    items.push(...found);
-    render(); if (cur < 0) play(start);
-    say('Dodano: ' + found.length);
+    const out = [];
+    const rootParent = u.pathname.replace(/\/+$/, '').replace(/[^/]*$/, '');
+    await crawl(u.href, 0, out, rootParent);
+    if (!out.length) throw new Error('W tym katalogu nie ma filmów albo listing jest wyłączony.');
+    addEntries(out);
+  }
+
+  /* ---------- odtwarzanie ---------- */
+  function play(item) {
+    if (!item) return;
+    cur = item;
+    const c = catOf(item); if (c) c.collapsed = false;
+    v.src = item.src;
+    v.playbackRate = +$('speed').value;
+    v.play().catch(() => {});
+    now.textContent = item.name;
+    document.title = item.name;
+    render();
+    const a = listEl.querySelector('li.active');
+    if (a) a.scrollIntoView({ block: 'nearest' });
+  }
+  function playRel(d) {
+    const all = flat(), i = all.indexOf(cur);
+    if (i < 0) return;
+    play(all[i + d]);
+  }
+  function stop() {
+    cur = null; v.removeAttribute('src'); v.load(); now.innerHTML = '&nbsp;'; document.title = 'Odtwarzacz filmów';
+  }
+
+  /* ---------- operacje na liście ---------- */
+  function removeItem(item) {
+    const c = catOf(item); if (!c) return;
+    const all = flat(), idx = all.indexOf(item);
+    c.items.splice(c.items.indexOf(item), 1);
+    if (item.blob) URL.revokeObjectURL(item.src);
+    if (item === cur) {
+      const rest = flat();
+      if (rest.length) { play(rest[Math.min(idx, rest.length - 1)]); return; }
+      stop();
+    }
+    render();
+  }
+  function moveItem(item, catName) {
+    const from = catOf(item), to = getCat(catName);
+    if (from === to) return;
+    from.items.splice(from.items.indexOf(item), 1);
+    to.items.push(item);
+    to.collapsed = false;
+    say('Przeniesiono do: ' + to.name);
+    render();
+  }
+  function renameCat(c) {
+    const n = (prompt('Nowa nazwa kategorii:', c.name) || '').trim();
+    if (!n || n === c.name) return;
+    const other = findCat(n);
+    if (other) {
+      other.items.push(...c.items);
+      cats.splice(cats.indexOf(c), 1);
+      say('Połączono z istniejącą kategorią: ' + n);
+    } else { c.name = n; }
+    render();
+  }
+  function deleteCat(c) {
+    if (c.items.length) {
+      if (c.name === UNC) return say('Kategorii „' + UNC + '” nie można usunąć, dopóki zawiera filmy.');
+      if (!confirm('Usunąć kategorię „' + c.name + '”? Filmy trafią do „' + UNC + '”.')) return;
+      getCat(UNC).items.push(...c.items);
+    }
+    cats.splice(cats.indexOf(c), 1);
+    render();
+  }
+  function shiftCat(c, d) {
+    const i = cats.indexOf(c), j = i + d;
+    if (j < 0 || j >= cats.length) return;
+    [cats[i], cats[j]] = [cats[j], cats[i]];
+    render();
+  }
+
+  /* ---------- rysowanie ---------- */
+  function icon(text, title, fn, disabled) {
+    const b = document.createElement('button');
+    b.className = 'ic'; b.textContent = text; b.title = title; b.setAttribute('aria-label', title);
+    if (disabled) b.disabled = true;
+    b.onclick = e => { e.stopPropagation(); fn(); };
+    return b;
+  }
+
+  function moveSelect(item) {
+    const s = document.createElement('select');
+    s.className = 'mv'; s.title = 'Przenieś do kategorii'; s.setAttribute('aria-label', 'Przenieś do kategorii');
+    s.append(new Option('⇄', ''));
+    cats.forEach(c => s.append(new Option(c.name, c.name)));
+    s.append(new Option('+ Nowa kategoria…', '__new'));
+    s.onclick = e => e.stopPropagation();
+    s.onchange = () => {
+      let val = s.value;
+      if (val === '__new') val = (prompt('Nazwa nowej kategorii:') || '').trim();
+      if (val) moveItem(item, val); else render();
+    };
+    return s;
   }
 
   function render() {
-    list.innerHTML = '';
-    items.forEach((it, i) => {
-      const li = document.createElement('li');
-      if (i === cur) li.classList.add('active');
-      li.tabIndex = 0;
-      const n = document.createElement('span'); n.className = 'name'; n.textContent = it.name;
-      const rm = document.createElement('button'); rm.className = 'rm'; rm.textContent = '×'; rm.title = 'Usuń z listy';
-      rm.onclick = e => { e.stopPropagation(); remove(i); };
-      li.append(n, rm);
-      li.onclick = () => play(i);
-      li.onkeydown = e => { if (e.key === 'Enter') play(i); };
-      list.append(li);
+    // lista kategorii
+    listEl.innerHTML = '';
+    cats.forEach((c, ci) => {
+      const sec = document.createElement('section');
+      sec.className = 'cat';
+      sec.addEventListener('dragover', e => { if (dragItem) { e.preventDefault(); sec.classList.add('over'); } });
+      sec.addEventListener('dragleave', e => { if (!sec.contains(e.relatedTarget)) sec.classList.remove('over'); });
+      sec.addEventListener('drop', e => {
+        if (!dragItem) return;
+        e.preventDefault(); e.stopPropagation(); sec.classList.remove('over');
+        const it = dragItem; dragItem = null; moveItem(it, c.name);
+      });
+
+      const head = document.createElement('div'); head.className = 'cat-head';
+      const tw = document.createElement('button');
+      tw.className = 'tw'; tw.textContent = c.collapsed ? '▸' : '▾';
+      tw.title = c.collapsed ? 'Rozwiń' : 'Zwiń'; tw.setAttribute('aria-expanded', String(!c.collapsed));
+      const toggle = () => { c.collapsed = !c.collapsed; render(); };
+      tw.onclick = toggle;
+      const name = document.createElement('span'); name.className = 'cat-name'; name.textContent = c.name; name.onclick = toggle;
+      const count = document.createElement('span'); count.className = 'cat-count'; count.textContent = c.items.length;
+      head.append(tw, name, count,
+        icon('▲', 'Przesuń kategorię w górę', () => shiftCat(c, -1), ci === 0),
+        icon('▼', 'Przesuń kategorię w dół', () => shiftCat(c, 1), ci === cats.length - 1),
+        icon('✎', 'Zmień nazwę kategorii', () => renameCat(c)),
+        icon('✕', 'Usuń kategorię', () => deleteCat(c)));
+      sec.append(head);
+
+      if (!c.collapsed) {
+        const ol = document.createElement('ol'); ol.className = 'items';
+        c.items.forEach(it => {
+          const li = document.createElement('li');
+          if (it === cur) li.classList.add('active');
+          li.tabIndex = 0; li.draggable = true;
+          li.addEventListener('dragstart', e => { dragItem = it; li.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', it.name); });
+          li.addEventListener('dragend', () => { dragItem = null; li.classList.remove('dragging'); });
+          const n = document.createElement('span'); n.className = 'name'; n.textContent = it.name;
+          const rm = document.createElement('button'); rm.className = 'rm'; rm.textContent = '×'; rm.title = 'Usuń z listy';
+          rm.onclick = e => { e.stopPropagation(); removeItem(it); };
+          li.append(n, moveSelect(it), rm);
+          li.onclick = () => play(it);
+          li.onkeydown = e => { if (e.key === 'Enter' && e.target === li) play(it); };
+          ol.append(li);
+        });
+        sec.append(ol);
+      }
+      listEl.append(sec);
     });
-    empty.style.display = cur >= 0 ? 'none' : 'grid';
+
+    // wybór kategorii docelowej przy dodawaniu
+    const t = $('target'), prev = t.value;
+    t.innerHTML = '';
+    t.append(new Option('Automatycznie (według folderu)', ''));
+    cats.forEach(c => t.append(new Option(c.name, c.name)));
+    t.value = cats.some(c => c.name === prev) ? prev : '';
+
+    const total = flat().length;
+    $('title').textContent = 'Lista odtwarzania' + (total ? ' (' + total + ')' : '');
+    empty.style.display = cur ? 'none' : 'grid';
+    save();
   }
 
-  function play(i) {
-    if (i < 0 || i >= items.length) return;
-    cur = i;
-    v.src = items[i].src;
-    v.playbackRate = +$('speed').value;
-    v.play().catch(() => {});
-    now.textContent = items[i].name;
-    document.title = items[i].name;
-    render();
-    list.children[i]?.scrollIntoView({ block: 'nearest' });
-  }
-
-  function remove(i) {
-    if (items[i].blob) URL.revokeObjectURL(items[i].src);
-    items.splice(i, 1);
-    if (i === cur) { v.removeAttribute('src'); v.load(); cur = -1; now.innerHTML = '&nbsp;'; if (items.length) { play(Math.min(i, items.length - 1)); return; } }
-    else if (i < cur) cur--;
-    render();
-  }
-
+  /* ---------- zdarzenia ---------- */
   v.addEventListener('ended', () => {
-    if ($('loop').checked && items.length === 1) { v.currentTime = 0; v.play(); return; }
+    const all = flat();
+    if ($('loop').checked && all.length === 1) { v.currentTime = 0; v.play(); return; }
     if (!$('auto').checked) return;
-    if (cur + 1 < items.length) play(cur + 1);
-    else if ($('loop').checked) play(0);
+    const i = all.indexOf(cur);
+    if (i >= 0 && i + 1 < all.length) play(all[i + 1]);
+    else if ($('loop').checked && all.length) play(all[0]);
   });
   v.addEventListener('error', () => {
     say('Nie można odtworzyć tego pliku. Przeglądarka może nie obsługiwać jego formatu lub kodeka (np. MKV/AVI).');
@@ -230,8 +458,8 @@
 
   $('files').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
   $('folder').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
-  $('prev').onclick = () => play(cur - 1);
-  $('next').onclick = () => play(cur + 1);
+  $('prev').onclick = () => playRel(-1);
+  $('next').onclick = () => playRel(1);
   $('speed').onchange = e => { v.playbackRate = +e.target.value; e.target.blur(); };
   const speeds = [...$('speed').options].map(o => +o.value);
   v.addEventListener('ratechange', () => { $('speed').value = String(v.playbackRate); });
@@ -242,9 +470,11 @@
     v.playbackRate = speeds[i];
     say('Prędkość: ' + speeds[i].toString().replace('.', ',') + '×');
   }
+
   $('clear').onclick = () => {
-    items.forEach(it => it.blob && URL.revokeObjectURL(it.src));
-    items = []; cur = -1; v.removeAttribute('src'); v.load(); now.innerHTML = '&nbsp;'; say(''); render();
+    if (flat().length && !confirm('Wyczyścić całą listę i kategorie?')) return;
+    flat().forEach(i => i.blob && URL.revokeObjectURL(i.src));
+    cats = []; stop(); say(''); render();
   };
   const loadUrl = () => {
     const val = $('url').value;
@@ -253,12 +483,44 @@
   $('load').onclick = loadUrl;
   $('url').onkeydown = e => { if (e.key === 'Enter') loadUrl(); };
 
-  // przeciąganie plików
+  const createCat = () => {
+    const n = $('newcat').value.trim();
+    if (!n) return;
+    if (findCat(n)) { say('Kategoria „' + n + '” już istnieje.'); return; }
+    getCat(n); $('newcat').value = ''; say('Utworzono kategorię: ' + n);
+    render(); $('target').value = n;
+  };
+  $('addcat').onclick = createCat;
+  $('newcat').onkeydown = e => { if (e.key === 'Enter') createCat(); };
+
+  $('sortcats').onchange = e => {
+    const m = e.target.value;
+    const byName = (a, b) => collator.compare(a.name, b.name);
+    if (m === 'az') cats.sort(byName);
+    if (m === 'za') cats.sort((a, b) => byName(b, a));
+    if (m === 'many') cats.sort((a, b) => b.items.length - a.items.length || byName(a, b));
+    if (m === 'few') cats.sort((a, b) => a.items.length - b.items.length || byName(a, b));
+    e.target.value = ''; if (m) say('Posortowano kategorie.'); render();
+  };
+  $('sortitems').onchange = e => {
+    const m = e.target.value;
+    cats.forEach(c => c.items.sort((a, b) => m === 'za' ? collator.compare(b.name, a.name) : collator.compare(a.name, b.name)));
+    e.target.value = ''; if (m) say('Posortowano filmy w każdej kategorii.'); render();
+  };
+  $('collapse').onclick = () => {
+    const anyOpen = cats.some(c => !c.collapsed);
+    cats.forEach(c => c.collapsed = anyOpen);
+    render();
+  };
+
+  // przeciąganie plików z komputera na okno (nie myli się z przenoszeniem filmów na liście)
+  const isFiles = e => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
   let depth = 0;
-  addEventListener('dragenter', e => { e.preventDefault(); depth++; document.body.classList.add('drag'); });
-  addEventListener('dragleave', () => { if (--depth <= 0) { depth = 0; document.body.classList.remove('drag'); } });
-  addEventListener('dragover', e => e.preventDefault());
+  addEventListener('dragenter', e => { if (!isFiles(e)) return; e.preventDefault(); depth++; document.body.classList.add('drag'); });
+  addEventListener('dragleave', e => { if (!isFiles(e)) return; if (--depth <= 0) { depth = 0; document.body.classList.remove('drag'); } });
+  addEventListener('dragover', e => { if (isFiles(e)) e.preventDefault(); });
   addEventListener('drop', e => {
+    if (!isFiles(e)) return;
     e.preventDefault(); depth = 0; document.body.classList.remove('drag');
     if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
   });
@@ -278,16 +540,15 @@
       case ']': case '>': stepSpeed(1); break;
       case '[': case '<': stepSpeed(-1); break;
       case '\\': v.playbackRate = 1; say('Prędkość: 1×'); break;
-      case 'n': case 'N': play(cur + 1); break;
-      case 'p': case 'P': play(cur - 1); break;
+      case 'n': case 'N': playRel(1); break;
+      case 'p': case 'P': playRel(-1); break;
     }
   });
 
-  // ?src=/filmy/ w adresie strony wczyta katalog lub plik od razu
-  const q = new URLSearchParams(location.search).getAll('src');
-  q.forEach(s => addUrl(s).catch(err => say(err.message)));
-
+  restore();
   render();
+  // ?src=/filmy/ w adresie strony wczyta katalog lub plik od razu
+  new URLSearchParams(location.search).getAll('src').forEach(s => addUrl(s).catch(err => say(err.message)));
 })();
 </script>
 </body>
