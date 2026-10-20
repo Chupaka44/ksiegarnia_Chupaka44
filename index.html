@@ -120,7 +120,7 @@ aside.open{display:flex}
 <div id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/epub.js/0.3.93/epub.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
 <script>
 (function(){
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -146,8 +146,10 @@ function applyBook(){
   rend.themes.override('background',bg,true);
   rend.themes.override('color',fg,true);
   rend.themes.override('line-height',String(S.lh),true);
-  if(S.ff)rend.themes.override('font-family',S.ff,true);else rend.themes.removeOverride('font-family');
-  rend.themes.default({'a':{color:'inherit !important'},'img':{'max-width':'100% !important'}});
+  if(S.ff){rend.themes.override('font-family',S.ff,true)}
+  else{try{delete rend.themes._overrides['font-family']}catch(e){}
+    try{rend.getContents().forEach(c=>c.content.style.removeProperty('font-family'))}catch(e){}}
+  try{rend.themes.default({'a':{color:'inherit !important'},'img':{'max-width':'100% !important'}})}catch(e){}
 }
 function save(){store.set('epub:settings',S)}
 applyUI();
@@ -159,7 +161,7 @@ $('#lh').oninput=e=>{S.lh=+e.target.value;applyUI();applyBook();save()};
 $('#wd').oninput=e=>{S.wd=+e.target.value;applyUI();save();if(rend)rend.resize()};
 $$('#th button').forEach(b=>b.onclick=()=>{S.t=b.dataset.t;applyUI();applyBook();save()});
 $('#fl').onchange=e=>{S.fl=e.target.value;if(rend){rend.flow(S.fl);rend.display(cur?cur.start.cfi:undefined)}save();
-  $('.nav',document).style.display='';$$('.nav').forEach(n=>n.style.display=S.fl==='paginated'?'':'none')};
+  $$('.nav').forEach(n=>n.style.display=S.fl==='paginated'?'':'none')};
 $('#bSet').onclick=e=>{e.stopPropagation();$('#set').classList.toggle('open')};
 document.addEventListener('click',e=>{if(!e.target.closest('#set')&&!e.target.closest('#bSet'))$('#set').classList.remove('open')});
 
@@ -196,7 +198,7 @@ async function openFile(file){
     book.loaded.navigation.then(n=>renderToc(n.toc));
     $('#pct').textContent='Indeksowanie…';
     book.ready.then(()=>book.locations.generate(1200)).then(()=>{ready=true;$('#prog').disabled=false;if(cur)upd(cur)}).catch(()=>{});
-  }catch(err){toast('Nie udało się otworzyć pliku EPUB');console.error(err)}
+  }catch(err){console.error(err);toast('Nie udało się otworzyć EPUB: '+(err&&err.message?err.message:err));const p=$('#drop p');if(p)p.textContent='Błąd: '+(err&&err.message?err.message:err)}
 }
 
 function bindRend(){
@@ -298,6 +300,19 @@ $('#q').onkeydown=async e=>{
     });
   }catch(err){res.innerHTML='<div class="empty">Błąd wyszukiwania.</div>'}
 };
+// automatyczne otwieranie book.epub z tego samego folderu (np. GitHub Pages)
+(async function(){
+  const d=$('#drop');
+  try{
+    d.querySelector('p').textContent='Wczytywanie book.epub…';
+    const r=await fetch('book.epub',{cache:'no-cache'});
+    if(!r.ok)throw new Error(r.status);
+    const b=await r.blob();
+    await openFile(new File([b],'book.epub',{type:'application/epub+zip'}));
+  }catch(e){
+    d.querySelector('p').textContent='Nie znaleziono book.epub. Przeciągnij plik .epub lub kliknij, aby go wybrać.';
+  }
+})();
 })();
 </script>
 </body>
