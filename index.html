@@ -2,576 +2,302 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Odtwarzacz filmów</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Czytnik EPUB</title>
 <style>
-  :root {
-    --bg: #101a1d;
-    --panel: #172428;
-    --line: #2a3d42;
-    --text: #e6eeee;
-    --muted: #8fa5a8;
-    --accent: #f0b254;
-    --accent-ink: #1a1305;
-    color-scheme: dark;
-  }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font: 15px/1.5 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 380px;
-    grid-template-rows: 100%;
-  }
-  main { padding: 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; overflow: auto; }
-  .stage {
-    background: #000; border-radius: 10px; overflow: hidden; position: relative;
-    aspect-ratio: 16 / 9; max-height: calc(100vh - 150px); width: 100%; margin: 0 auto;
-  }
-  video { width: 100%; height: 100%; display: block; background: #000; }
-  .empty {
-    position: absolute; inset: 0; display: grid; place-items: center;
-    text-align: center; padding: 24px; color: var(--muted); pointer-events: none;
-  }
-  .empty strong { display: block; color: var(--text); font-size: 20px; margin-bottom: 6px; }
-  body.drag .stage { outline: 3px dashed var(--accent); outline-offset: -6px; }
-  .now { font-size: 18px; font-weight: 600; overflow-wrap: anywhere; }
-  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  button, .btn, select {
-    font: inherit; color: var(--text); background: var(--panel);
-    border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; cursor: pointer;
-  }
-  button:hover, .btn:hover, select:hover { border-color: var(--muted); }
-  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  input[type=file] { display: none; }
-  label.check { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); cursor: pointer; }
-  .hint { color: var(--muted); font-size: 13px; margin: 0; }
-
-  aside { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; min-height: 0; }
-  aside header { padding: 16px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
-  aside h1 { font-size: 16px; margin: 0; }
-  .field { display: grid; gap: 4px; color: var(--muted); font-size: 13px; }
-  .field select { width: 100%; background: var(--bg); }
-  .row { display: flex; gap: 6px; }
-  .row input {
-    flex: 1; min-width: 0; font: inherit; color: var(--text); background: var(--bg);
-    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
-  }
-  details.tools { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
-  details.tools summary { cursor: pointer; font-weight: 600; }
-  details.tools[open] summary { margin-bottom: 10px; }
-  details.tools > div { display: grid; gap: 10px; }
-  .msg { padding: 8px 16px 0; color: var(--muted); font-size: 13px; min-height: 1.9em; }
-
-  #list { padding: 8px; display: grid; gap: 8px; }
-  .cat { border: 1px solid var(--line); border-radius: 10px; background: #142125; }
-  .cat.over { border-color: var(--accent); background: #1d2f35; }
-  .cat-head { display: flex; align-items: center; gap: 4px; padding: 6px 6px 6px 8px; }
-  .cat-head .tw { background: none; border: 0; padding: 2px 6px; color: var(--muted); }
-  .cat-name { flex: 1; font-weight: 600; overflow-wrap: anywhere; cursor: pointer; }
-  .cat-count { color: var(--muted); font-size: 13px; margin-right: 4px; }
-  .ic { background: none; border: 0; color: var(--muted); padding: 2px 6px; line-height: 1.2; border-radius: 6px; }
-  .ic:hover { color: var(--text); background: #1e3035; }
-  .ic:disabled { opacity: .3; cursor: default; }
-  ol.items { list-style: none; margin: 0; padding: 0 6px 6px; }
-  ol.items:empty::after { content: "Pusta kategoria – przeciągnij tu film albo użyj ⇄ przy filmie."; display: block; color: var(--muted); font-size: 13px; padding: 6px 8px; }
-  li { display: flex; gap: 6px; align-items: center; padding: 6px 8px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
-  li:hover { background: #1e3035; }
-  li.active { background: #243a40; border-color: var(--accent); }
-  li .name { flex: 1; overflow-wrap: anywhere; font-size: 14px; }
-  li select.mv {
-    appearance: none; -webkit-appearance: none; width: 30px; padding: 2px 0; text-align: center;
-    text-align-last: center; background: none; border: 0; color: var(--muted); font-size: 15px;
-  }
-  li select.mv:hover { color: var(--text); background: #1e3035; }
-  li .rm { background: none; border: 0; color: var(--muted); padding: 2px 8px; font-size: 18px; line-height: 1; }
-  li .rm:hover { color: var(--text); }
-  li.dragging { opacity: .4; }
-
-  @media (max-width: 800px) {
-    body { grid-template-columns: 1fr; grid-template-rows: auto auto; height: auto; }
-    aside { border-left: 0; border-top: 1px solid var(--line); max-height: 70vh; }
-    .stage { max-height: none; }
-  }
+:root{--bg:#fff;--fg:#222;--ui:#f4f4f5;--bd:#d8d8dc;--ac:#2f6fed;--sh:rgba(0,0,0,.15);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+:root[data-t=sepia]{--bg:#f4ecd8;--fg:#5b4636;--ui:#eadfc4;--bd:#d6c8a5;--ac:#a0642a}
+:root[data-t=dark]{--bg:#1f2227;--fg:#d6d6d6;--ui:#2a2e35;--bd:#3b4049;--ac:#6ea0ff;--sh:rgba(0,0,0,.5)}
+:root[data-t=black]{--bg:#000;--fg:#b8b8b8;--ui:#111;--bd:#262626;--ac:#7aa7ff;--sh:rgba(0,0,0,.7)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:15px system-ui,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+header,footer{background:var(--ui);border-color:var(--bd);display:flex;align-items:center;gap:6px;padding:6px 10px;flex:none}
+header{border-bottom:1px solid var(--bd)}footer{border-top:1px solid var(--bd);gap:12px}
+.ib{background:none;border:1px solid transparent;border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.ib:hover{background:var(--bd)}.ib.on{color:var(--ac);border-color:var(--ac)}
+#title{flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;min-width:0}
+main{flex:1;position:relative;min-height:0;display:flex;justify-content:center}
+#wrap{width:100%;max-width:900px;height:100%;position:relative}
+#viewer{width:100%;height:100%}
+.nav{position:absolute;top:0;bottom:0;width:12%;max-width:90px;background:none;border:0;cursor:pointer;font-size:28px;opacity:0;transition:.2s;color:var(--fg);z-index:5}
+.nav:hover{opacity:.5}#prev{left:0}#next{right:0}
+#welcome{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:6;background:var(--bg)}
+#drop{border:2px dashed var(--bd);border-radius:16px;padding:48px 36px;text-align:center;max-width:90%;cursor:pointer}
+#drop.over{border-color:var(--ac);background:var(--ui)}
+#drop h1{margin:0 0 8px;font-size:22px}#drop p{margin:6px 0;opacity:.7}
+.btn{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:10px 18px;cursor:pointer;margin-top:12px}
+#prog{flex:1;accent-color:var(--ac)}#pct{min-width:120px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px;opacity:.8}
+aside{position:absolute;top:0;bottom:0;left:0;width:340px;max-width:92%;background:var(--ui);border-right:1px solid var(--bd);box-shadow:4px 0 16px var(--sh);z-index:20;display:none;flex-direction:column}
+aside.open{display:flex}
+.tabs{display:flex;border-bottom:1px solid var(--bd)}
+.tabs button{flex:1;padding:10px;background:none;border:0;border-bottom:2px solid transparent;cursor:pointer}
+.tabs button.on{border-color:var(--ac);color:var(--ac)}
+.pane{flex:1;overflow:auto;padding:8px;display:none}.pane.on{display:block}
+.it{display:block;width:100%;text-align:left;background:none;border:0;padding:8px 10px;border-radius:6px;cursor:pointer}
+.it:hover{background:var(--bd)}.it small{display:block;opacity:.65;margin-top:2px}
+.sub{margin-left:14px}
+.row{display:flex;gap:6px;align-items:center}.row .it{flex:1}
+.x{background:none;border:0;cursor:pointer;opacity:.6;padding:6px}
+#q{width:100%;padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);margin-bottom:8px}
+#set{position:absolute;top:8px;right:8px;width:310px;max-width:calc(100% - 16px);background:var(--ui);border:1px solid var(--bd);border-radius:12px;box-shadow:0 8px 24px var(--sh);padding:14px;z-index:30;display:none}
+#set.open{display:block}
+#set label{display:block;font-size:12px;opacity:.75;margin:10px 0 4px}
+#set select,#set input[type=range]{width:100%}#set select{padding:6px;background:var(--bg);border:1px solid var(--bd);border-radius:6px}
+#set input[type=range]{accent-color:var(--ac)}
+.sw{display:flex;gap:8px}.sw button{flex:1;height:36px;border-radius:8px;border:2px solid var(--bd);cursor:pointer;font-size:13px}
+.sw button.on{border-color:var(--ac)}
+.empty{opacity:.6;padding:12px;text-align:center}
+#toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:20px;opacity:0;pointer-events:none;transition:.3s;z-index:50}
+#toast.show{opacity:.92}
 </style>
 </head>
 <body>
+<header>
+  <button class="ib" id="bMenu" title="Spis treści, zakładki, szukanie">☰ Menu</button>
+  <div id="title">Czytnik EPUB</div>
+  <button class="ib" id="bMark" title="Dodaj zakładkę (B)">🔖</button>
+  <button class="ib" id="bSet" title="Ustawienia">Aa</button>
+  <button class="ib" id="bFull" title="Pełny ekran (F)">⛶</button>
+  <button class="ib" id="bOpen" title="Otwórz plik">📂</button>
+</header>
 <main>
-  <div class="stage">
-    <video id="v" controls preload="metadata" playsinline></video>
-    <div class="empty" id="empty">
-      <div><strong>Brak filmu</strong>Przeciągnij pliki tutaj albo użyj przycisku „Dodaj pliki”.</div>
-    </div>
+  <div id="wrap">
+    <div id="viewer"></div>
+    <button class="nav" id="prev" aria-label="Poprzednia strona">‹</button>
+    <button class="nav" id="next" aria-label="Następna strona">›</button>
   </div>
-  <div class="now" id="now">&nbsp;</div>
-  <div class="bar">
-    <button id="prev" title="Poprzedni (P)">Poprzedni</button>
-    <button id="next" title="Następny (N)">Następny</button>
-    <select id="speed" aria-label="Prędkość odtwarzania">
-      <option value="0.25">0,25×</option><option value="0.5">0,5×</option>
-      <option value="0.75">0,75×</option><option value="1" selected>1×</option>
-      <option value="1.25">1,25×</option><option value="1.5">1,5×</option>
-      <option value="1.75">1,75×</option><option value="2">2×</option>
-      <option value="2.5">2,5×</option><option value="3">3×</option>
-      <option value="4">4×</option>
+  <aside id="side">
+    <div class="tabs"><button data-p="toc" class="on">Spis</button><button data-p="bm">Zakładki</button><button data-p="se">Szukaj</button></div>
+    <div class="pane on" id="toc"><div class="empty">Otwórz książkę, aby zobaczyć spis treści.</div></div>
+    <div class="pane" id="bm"><div class="empty">Brak zakładek.</div></div>
+    <div class="pane" id="se"><input id="q" placeholder="Szukaj w książce i naciśnij Enter"><div id="res"></div></div>
+  </aside>
+  <div id="set">
+    <label>Rozmiar czcionki: <span id="fsv"></span>%</label>
+    <input type="range" id="fs" min="70" max="250" step="5">
+    <label>Czcionka</label>
+    <select id="ff">
+      <option value="">Oryginalna z książki</option>
+      <option value="Georgia, serif">Georgia</option>
+      <option value="Palatino Linotype, Palatino, serif">Palatino</option>
+      <option value="Times New Roman, Times, serif">Times</option>
+      <option value="Arial, Helvetica, sans-serif">Arial</option>
+      <option value="Verdana, sans-serif">Verdana</option>
+      <option value="Trebuchet MS, sans-serif">Trebuchet</option>
+      <option value="Courier New, monospace">Courier</option>
     </select>
-    <label class="check"><input type="checkbox" id="auto" checked> Następny automatycznie</label>
-    <label class="check"><input type="checkbox" id="loop"> Zapętl</label>
+    <label>Interlinia: <span id="lhv"></span></label>
+    <input type="range" id="lh" min="1.1" max="2.4" step="0.1">
+    <label>Szerokość tekstu</label>
+    <input type="range" id="wd" min="400" max="1200" step="50">
+    <label>Tło</label>
+    <div class="sw" id="th">
+      <button data-t="light" style="background:#fff;color:#222">Jasne</button>
+      <button data-t="sepia" style="background:#f4ecd8;color:#5b4636">Sepia</button>
+      <button data-t="dark" style="background:#1f2227;color:#d6d6d6">Ciemne</button>
+      <button data-t="black" style="background:#000;color:#b8b8b8">Czarne</button>
+    </div>
+    <label>Tryb czytania</label>
+    <select id="fl"><option value="paginated">Strony (lewo/prawo)</option><option value="scrolled-doc">Przewijanie</option></select>
   </div>
-  <p class="hint">Skróty: spacja – odtwarzaj/pauza, ← → – przewiń 10 s, ↑ ↓ – głośność, F – pełny ekran, M – wycisz, N / P – następny / poprzedni, [ ] – wolniej / szybciej, \ – prędkość 1×.</p>
+  <div id="welcome">
+    <div id="drop">
+      <h1>📚 Czytnik EPUB</h1>
+      <p>Przeciągnij tutaj plik .epub lub kliknij, aby go wybrać.</p>
+      <p>Strzałki ← → przewracają strony, B dodaje zakładkę.</p>
+      <button class="btn">Wybierz plik</button>
+    </div>
+  </div>
 </main>
+<footer>
+  <input type="range" id="prog" min="0" max="1000" value="0" disabled>
+  <div id="pct">–</div>
+</footer>
+<input type="file" id="file" accept=".epub,application/epub+zip" hidden>
+<div id="toast"></div>
 
-<aside>
-  <header>
-    <h1 id="title">Lista odtwarzania</h1>
-    <div class="bar">
-      <label class="btn primary" for="files">Dodaj pliki</label>
-      <label class="btn" for="folder">Dodaj folder</label>
-      <button id="clear">Wyczyść wszystko</button>
-    </div>
-    <input type="file" id="files" accept="video/*,.mkv,.avi,.mov" multiple>
-    <input type="file" id="folder" webkitdirectory multiple>
-
-    <label class="field">Dodawaj do kategorii
-      <select id="target"></select>
-    </label>
-
-    <div class="row">
-      <input id="url" type="text" placeholder="/filmy/ lub /filmy/film.mp4" aria-label="Adres na serwerze">
-      <button id="load">Wczytaj</button>
-    </div>
-    <p class="hint">Adres na serwerze: plik, katalog z włączonym listingiem (autoindex) albo plik playlist.json. Podkatalogi (do 3 poziomów) stają się osobnymi kategoriami.</p>
-
-    <details class="tools" open>
-      <summary>Kategorie i sortowanie</summary>
-      <div>
-        <div class="row">
-          <input id="newcat" type="text" placeholder="Nazwa nowej kategorii" aria-label="Nazwa nowej kategorii">
-          <button id="addcat">Utwórz</button>
-        </div>
-        <div class="bar">
-          <select id="sortcats" aria-label="Sortuj kategorie">
-            <option value="">Sortuj kategorie…</option>
-            <option value="az">Nazwa A–Z</option>
-            <option value="za">Nazwa Z–A</option>
-            <option value="many">Najwięcej filmów</option>
-            <option value="few">Najmniej filmów</option>
-          </select>
-          <select id="sortitems" aria-label="Sortuj filmy">
-            <option value="">Sortuj filmy…</option>
-            <option value="az">Nazwa A–Z</option>
-            <option value="za">Nazwa Z–A</option>
-          </select>
-          <button id="collapse">Zwiń / rozwiń</button>
-        </div>
-        <p class="hint">Kolejność kategorii zmienisz strzałkami ▲ ▼. Film przeniesiesz do innej kategorii przyciskiem ⇄ albo przeciągając go na nagłówek.</p>
-      </div>
-    </details>
-  </header>
-  <div class="msg" id="msg"></div>
-  <div id="list"></div>
-</aside>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/epub.js/0.3.93/epub.min.js"></script>
 <script>
-(() => {
-  const EXT = /\.(mp4|m4v|webm|ogv|ogg|mov|mkv|avi|ts|mpg|mpeg)$/i;
-  const UNC = 'Bez kategorii';
-  const STORE = 'wideo-odtwarzacz-v1';
-  const collator = new Intl.Collator('pl', { numeric: true, sensitivity: 'base' });
-  const $ = id => document.getElementById(id);
-  const v = $('v'), now = $('now'), empty = $('empty'), msg = $('msg'), listEl = $('list');
+(function(){
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let S=Object.assign({fs:100,ff:'',lh:1.6,wd:800,t:'light',fl:'paginated'},store.get('epub:settings',{}));
+let book=null,rend=null,key='',marks=[],cur=null,ready=false;
 
-  let cats = [];      // [{ name, collapsed, items: [{ name, src, blob }] }]
-  let cur = null;     // aktualnie odtwarzany element
-  let dragItem = null;
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),1800)}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 
-  const say = t => { msg.textContent = t || ''; };
-  const findCat = n => cats.find(c => c.name === n);
-  const flat = () => cats.flatMap(c => c.items);
-  const catOf = item => cats.find(c => c.items.includes(item));
+const THEMES={light:['#ffffff','#222222'],sepia:['#f4ecd8','#5b4636'],dark:['#1f2227','#d6d6d6'],black:['#000000','#b8b8b8']};
+function applyUI(){
+  document.documentElement.dataset.t=S.t;
+  $('#fs').value=S.fs;$('#fsv').textContent=S.fs;$('#ff').value=S.ff;
+  $('#lh').value=S.lh;$('#lhv').textContent=S.lh;$('#wd').value=S.wd;$('#fl').value=S.fl;
+  $$('#th button').forEach(b=>b.classList.toggle('on',b.dataset.t===S.t));
+  $('#wrap').style.maxWidth=S.wd+'px';
+}
+function applyBook(){
+  if(!rend)return;
+  const [bg,fg]=THEMES[S.t];
+  rend.themes.fontSize(S.fs+'%');
+  rend.themes.override('background',bg,true);
+  rend.themes.override('color',fg,true);
+  rend.themes.override('line-height',String(S.lh),true);
+  if(S.ff)rend.themes.override('font-family',S.ff,true);else rend.themes.removeOverride('font-family');
+  rend.themes.default({'a':{color:'inherit !important'},'img':{'max-width':'100% !important'}});
+}
+function save(){store.set('epub:settings',S)}
+applyUI();
 
-  function getCat(name) {
-    name = (name || '').trim() || UNC;
-    let c = findCat(name);
-    if (!c) { c = { name, collapsed: false, items: [] }; cats.push(c); }
-    return c;
+// settings events
+$('#fs').oninput=e=>{S.fs=+e.target.value;applyUI();applyBook();save()};
+$('#ff').onchange=e=>{S.ff=e.target.value;applyBook();save()};
+$('#lh').oninput=e=>{S.lh=+e.target.value;applyUI();applyBook();save()};
+$('#wd').oninput=e=>{S.wd=+e.target.value;applyUI();save();if(rend)rend.resize()};
+$$('#th button').forEach(b=>b.onclick=()=>{S.t=b.dataset.t;applyUI();applyBook();save()});
+$('#fl').onchange=e=>{S.fl=e.target.value;if(rend){rend.flow(S.fl);rend.display(cur?cur.start.cfi:undefined)}save();
+  $('.nav',document).style.display='';$$('.nav').forEach(n=>n.style.display=S.fl==='paginated'?'':'none')};
+$('#bSet').onclick=e=>{e.stopPropagation();$('#set').classList.toggle('open')};
+document.addEventListener('click',e=>{if(!e.target.closest('#set')&&!e.target.closest('#bSet'))$('#set').classList.remove('open')});
+
+// side panel
+$('#bMenu').onclick=()=>$('#side').classList.toggle('open');
+$$('.tabs button').forEach(b=>b.onclick=()=>{$$('.tabs button').forEach(x=>x.classList.toggle('on',x===b));$$('.pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p));if(b.dataset.p==='se')$('#q').focus()});
+
+// open file
+function pick(){$('#file').click()}
+$('#bOpen').onclick=pick;$('#drop').onclick=pick;
+$('#file').onchange=e=>{if(e.target.files[0])openFile(e.target.files[0]);e.target.value=''};
+['dragover','dragenter'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();$('#drop').classList.add('over')}));
+['dragleave','drop'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();$('#drop').classList.remove('over')}));
+document.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)openFile(f)});
+
+async function openFile(file){
+  try{
+    const buf=await file.arrayBuffer();
+    if(book){try{book.destroy()}catch(e){}}
+    $('#viewer').innerHTML='';ready=false;cur=null;
+    book=ePub(buf);
+    const meta=await book.loaded.metadata;
+    key='epub:'+(meta.identifier||'')+'|'+(meta.title||file.name);
+    $('#title').textContent=(meta.title||file.name)+(meta.creator?' – '+meta.creator:'');
+    document.title=meta.title||'Czytnik EPUB';
+    marks=store.get(key+':marks',[]);renderMarks();
+    rend=book.renderTo('viewer',{width:'100%',height:'100%',flow:S.fl,spread:'none',allowScriptedContent:false});
+    applyBook();
+    bindRend();
+    const pos=store.get(key+':pos',null);
+    await rend.display(pos||undefined);
+    $('#welcome').style.display='none';
+    $$('.nav').forEach(n=>n.style.display=S.fl==='paginated'?'':'none');
+    book.loaded.navigation.then(n=>renderToc(n.toc));
+    $('#pct').textContent='Indeksowanie…';
+    book.ready.then(()=>book.locations.generate(1200)).then(()=>{ready=true;$('#prog').disabled=false;if(cur)upd(cur)}).catch(()=>{});
+  }catch(err){toast('Nie udało się otworzyć pliku EPUB');console.error(err)}
+}
+
+function bindRend(){
+  rend.on('relocated',loc=>{cur=loc;store.set(key+':pos',loc.start.cfi);upd(loc)});
+  rend.on('keyup',keys);
+  let sx=0,sy=0;
+  rend.on('touchstart',e=>{sx=e.changedTouches[0].screenX;sy=e.changedTouches[0].screenY});
+  rend.on('touchend',e=>{if(S.fl!=='paginated')return;const dx=e.changedTouches[0].screenX-sx,dy=e.changedTouches[0].screenY-sy;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){dx<0?rend.next():rend.prev()}});
+}
+function upd(loc){
+  let txt='';
+  if(ready){const p=book.locations.percentageFromCfi(loc.start.cfi);$('#prog').value=Math.round(p*1000);txt=Math.round(p*100)+'%';
+    const n=book.locations.locationFromCfi(loc.start.cfi),t=book.locations.length();if(typeof n==='number')txt+=' · '+(n+1)+'/'+t}
+  $('#pct').textContent=txt||'–';
+  $('#bMark').classList.toggle('on',isMarked(loc)>=0);
+}
+$('#prog').oninput=e=>{if(!ready)return;const cfi=book.locations.cfiFromPercentage(e.target.value/1000);rend.display(cfi)};
+
+// nav
+function keys(e){
+  if(e.target&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+  const k=e.key;
+  if(k==='ArrowRight'||k==='PageDown'||k===' ')rend&&rend.next();
+  else if(k==='ArrowLeft'||k==='PageUp')rend&&rend.prev();
+  else if(k==='b'||k==='B')toggleMark();
+  else if(k==='f'||k==='F')fs();
+  else if(k==='Escape'){$('#side').classList.remove('open');$('#set').classList.remove('open')}
+}
+document.addEventListener('keyup',keys);
+$('#next').onclick=()=>rend&&rend.next();
+$('#prev').onclick=()=>rend&&rend.prev();
+function fs(){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{})}
+$('#bFull').onclick=fs;
+
+// toc
+function renderToc(items){
+  const box=$('#toc');box.innerHTML='';
+  if(!items||!items.length){box.innerHTML='<div class="empty">Ta książka nie ma spisu treści.</div>';return}
+  (function build(list,parent,lvl){list.forEach(it=>{
+    const b=document.createElement('button');b.className='it'+(lvl?' sub':'');b.textContent=(it.label||'').trim();
+    b.style.marginLeft=lvl*14+'px';
+    b.onclick=()=>{rend.display(it.href);if(innerWidth<700)$('#side').classList.remove('open')};
+    parent.appendChild(b);if(it.subitems&&it.subitems.length)build(it.subitems,parent,lvl+1)})})(items,box,0);
+}
+
+// bookmarks
+function isMarked(loc){
+  if(!loc||!marks.length)return -1;
+  const c=new ePub.CFI();
+  return marks.findIndex(m=>{try{return c.compare(m.cfi,loc.start.cfi)>=0&&c.compare(m.cfi,loc.end.cfi)<=0}catch(e){return m.cfi===loc.start.cfi}});
+}
+function chapterOf(loc){
+  try{const it=book.navigation.get(loc.start.href);return it?it.label.trim():''}catch(e){return ''}
+}
+function toggleMark(){
+  if(!cur){return}
+  const i=isMarked(cur);
+  if(i>=0){marks.splice(i,1);toast('Usunięto zakładkę')}
+  else{
+    const pct=ready?Math.round(book.locations.percentageFromCfi(cur.start.cfi)*100)+'%':'';
+    marks.push({cfi:cur.start.cfi,label:chapterOf(cur)||'Zakładka',pct,date:new Date().toLocaleString('pl-PL')});
+    toast('Dodano zakładkę');
   }
+  store.set(key+':marks',marks);renderMarks();upd(cur);
+}
+$('#bMark').onclick=toggleMark;
+function renderMarks(){
+  const box=$('#bm');box.innerHTML='';
+  if(!marks.length){box.innerHTML='<div class="empty">Brak zakładek. Naciśnij 🔖 lub klawisz B.</div>';return}
+  marks.forEach((m,i)=>{
+    const r=document.createElement('div');r.className='row';
+    const b=document.createElement('button');b.className='it';
+    b.innerHTML=esc(m.label)+'<small>'+esc(m.pct||'')+' · '+esc(m.date)+'</small>';
+    b.onclick=()=>{rend.display(m.cfi);if(innerWidth<700)$('#side').classList.remove('open')};
+    const x=document.createElement('button');x.className='x';x.textContent='✕';x.title='Usuń';
+    x.onclick=()=>{marks.splice(i,1);store.set(key+':marks',marks);renderMarks();if(cur)upd(cur)};
+    r.append(b,x);box.appendChild(r);
+  });
+}
 
-  /* ---------- zapis (tylko pliki z serwera; pliki z dysku nie przetrwają odświeżenia) ---------- */
-  function save() {
-    try {
-      const data = cats.map(c => ({
-        name: c.name, collapsed: c.collapsed,
-        items: c.items.filter(i => !i.blob).map(i => ({ name: i.name, src: i.src }))
-      })).filter(c => c.items.length || c.name !== UNC);
-      localStorage.setItem(STORE, JSON.stringify(data));
-    } catch (e) {}
-  }
-  function restore() {
-    try {
-      const data = JSON.parse(localStorage.getItem(STORE) || '[]');
-      data.forEach(d => {
-        const c = getCat(d.name);
-        c.collapsed = !!d.collapsed;
-        (d.items || []).forEach(i => c.items.push({ name: i.name, src: i.src, blob: false }));
-      });
-    } catch (e) {}
-  }
-
-  /* ---------- dodawanie ---------- */
-  function addEntries(entries) {
-    const forced = $('target').value;
-    const known = new Set(flat().filter(i => !i.blob).map(i => i.src));
-    entries.sort((a, b) => collator.compare(a.dir || '', b.dir || '') || collator.compare(a.name, b.name));
-    let added = 0, first = null;
-    entries.forEach(e => {
-      if (!e.blob && known.has(e.src)) return;
-      const item = { name: e.name, src: e.src, blob: !!e.blob };
-      getCat(forced || e.dir).items.push(item);
-      if (!first) first = item;
-      added++;
+// search
+$('#q').onkeydown=async e=>{
+  if(e.key!=='Enter'||!book)return;
+  const q=e.target.value.trim();if(!q)return;
+  const res=$('#res');res.innerHTML='<div class="empty">Szukam…</div>';
+  try{
+    await book.ready;
+    const all=await Promise.all(book.spine.spineItems.map(it=>it.load(book.load.bind(book)).then(it.find.bind(it,q)).catch(()=>[]).finally(()=>it.unload())));
+    const hits=[].concat(...all);
+    res.innerHTML='';
+    if(!hits.length){res.innerHTML='<div class="empty">Brak wyników.</div>';return}
+    hits.slice(0,200).forEach(h=>{
+      const b=document.createElement('button');b.className='it';
+      const ex=esc(h.excerpt.trim()),qq=esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      b.innerHTML=ex.replace(new RegExp(qq,'gi'),m=>'<mark>'+m+'</mark>');
+      b.onclick=()=>{rend.display(h.cfi);if(innerWidth<700)$('#side').classList.remove('open')};
+      res.appendChild(b);
     });
-    say(added ? 'Dodano filmów: ' + added : 'Nic nowego do dodania.');
-    if (first && !cur) play(first); else render();
-  }
-
-  function addFiles(fileList) {
-    const files = [...fileList].filter(f => f.type.startsWith('video/') || EXT.test(f.name));
-    if (!files.length) { say('Nie znaleziono plików wideo.'); return; }
-    addEntries(files.map(f => ({
-      name: f.name,
-      src: URL.createObjectURL(f),
-      blob: true,
-      dir: f.webkitRelativePath ? f.webkitRelativePath.split('/').slice(0, -1).join('/') : ''
-    })));
-  }
-
-  async function crawl(href, depth, out, rootParent) {
-    const res = await fetch(href);
-    if (!res.ok) throw new Error('Serwer odpowiedział: ' + res.status);
-    const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
-    const base = new URL(href);
-    const label = decodeURIComponent(base.pathname.slice(rootParent.length)).replace(/\/+$/, '') || 'Serwer';
-    const links = [...doc.querySelectorAll('a[href]')]
-      .map(a => new URL(a.getAttribute('href'), base))
-      .filter(x => x.origin === base.origin && !x.search && !x.hash);
-    for (const x of links) {
-      if (EXT.test(x.pathname)) {
-        out.push({ name: decodeURIComponent(x.pathname.split('/').pop()), src: x.href, dir: label });
-      } else if (depth < 3 && x.pathname.endsWith('/') &&
-                 x.pathname.startsWith(base.pathname) && x.pathname.length > base.pathname.length) {
-        await crawl(x.href, depth + 1, out, rootParent);
-      }
-    }
-  }
-
-  // playlist.json: tablica ścieżek ["filmy/Serial/01.mp4", ...] albo obiektów {src, name?, cat?}
-  async function addManifest(u, silent) {
-    const res = await fetch(u.href, { cache: 'no-cache' });
-    if (!res.ok) { if (silent) return; throw new Error('Nie można pobrać ' + u.pathname + ' (' + res.status + ').'); }
-    const data = await res.json();
-    const list = (Array.isArray(data) ? data : data.items || [])
-      .map(x => typeof x === 'string' ? { src: x } : x)
-      .filter(x => x && x.src);
-    if (!list.length) { if (silent) return; throw new Error('Plik ' + u.pathname + ' nie zawiera żadnych filmów.'); }
-    const urls = list.map(x => new URL(x.src, u.href));
-    const dirs = urls.map(p => decodeURIComponent(p.pathname).split('/').slice(0, -1));
-    let common = Math.min(...dirs.map(d => d.length)) - 1;
-    dirs.forEach(d => { let k = 0; while (k < common && d[k] === dirs[0][k]) k++; common = k; });
-    addEntries(list.map((x, i) => ({
-      name: x.name || decodeURIComponent(urls[i].pathname.split('/').pop()),
-      src: urls[i].href,
-      dir: x.cat || dirs[i].slice(common).join('/')
-    })).filter(e => EXT.test(e.src.split('?')[0])));
-  }
-
-  async function addUrl(raw) {
-    const u = new URL(raw.trim(), location.href);
-    if (/\.json$/i.test(u.pathname)) return addManifest(u, false);
-    if (EXT.test(u.pathname)) {
-      const parts = u.pathname.split('/');
-      const dir = decodeURIComponent(parts[parts.length - 2] || '');
-      addEntries([{ name: decodeURIComponent(parts.pop()), src: u.href, dir }]);
-      return;
-    }
-    say('Wczytywanie katalogu…');
-    const out = [];
-    const rootParent = u.pathname.replace(/\/+$/, '').replace(/[^/]*$/, '');
-    await crawl(u.href, 0, out, rootParent);
-    if (!out.length) throw new Error('W tym katalogu nie ma filmów albo listing jest wyłączony.');
-    addEntries(out);
-  }
-
-  /* ---------- odtwarzanie ---------- */
-  function play(item) {
-    if (!item) return;
-    cur = item;
-    const c = catOf(item); if (c) c.collapsed = false;
-    v.src = item.src;
-    v.playbackRate = +$('speed').value;
-    v.play().catch(() => {});
-    now.textContent = item.name;
-    document.title = item.name;
-    render();
-    const a = listEl.querySelector('li.active');
-    if (a) a.scrollIntoView({ block: 'nearest' });
-  }
-  function playRel(d) {
-    const all = flat(), i = all.indexOf(cur);
-    if (i < 0) return;
-    play(all[i + d]);
-  }
-  function stop() {
-    cur = null; v.removeAttribute('src'); v.load(); now.innerHTML = '&nbsp;'; document.title = 'Odtwarzacz filmów';
-  }
-
-  /* ---------- operacje na liście ---------- */
-  function removeItem(item) {
-    const c = catOf(item); if (!c) return;
-    const all = flat(), idx = all.indexOf(item);
-    c.items.splice(c.items.indexOf(item), 1);
-    if (item.blob) URL.revokeObjectURL(item.src);
-    if (item === cur) {
-      const rest = flat();
-      if (rest.length) { play(rest[Math.min(idx, rest.length - 1)]); return; }
-      stop();
-    }
-    render();
-  }
-  function moveItem(item, catName) {
-    const from = catOf(item), to = getCat(catName);
-    if (from === to) return;
-    from.items.splice(from.items.indexOf(item), 1);
-    to.items.push(item);
-    to.collapsed = false;
-    say('Przeniesiono do: ' + to.name);
-    render();
-  }
-  function renameCat(c) {
-    const n = (prompt('Nowa nazwa kategorii:', c.name) || '').trim();
-    if (!n || n === c.name) return;
-    const other = findCat(n);
-    if (other) {
-      other.items.push(...c.items);
-      cats.splice(cats.indexOf(c), 1);
-      say('Połączono z istniejącą kategorią: ' + n);
-    } else { c.name = n; }
-    render();
-  }
-  function deleteCat(c) {
-    if (c.items.length) {
-      if (c.name === UNC) return say('Kategorii „' + UNC + '” nie można usunąć, dopóki zawiera filmy.');
-      if (!confirm('Usunąć kategorię „' + c.name + '”? Filmy trafią do „' + UNC + '”.')) return;
-      getCat(UNC).items.push(...c.items);
-    }
-    cats.splice(cats.indexOf(c), 1);
-    render();
-  }
-  function shiftCat(c, d) {
-    const i = cats.indexOf(c), j = i + d;
-    if (j < 0 || j >= cats.length) return;
-    [cats[i], cats[j]] = [cats[j], cats[i]];
-    render();
-  }
-
-  /* ---------- rysowanie ---------- */
-  function icon(text, title, fn, disabled) {
-    const b = document.createElement('button');
-    b.className = 'ic'; b.textContent = text; b.title = title; b.setAttribute('aria-label', title);
-    if (disabled) b.disabled = true;
-    b.onclick = e => { e.stopPropagation(); fn(); };
-    return b;
-  }
-
-  function moveSelect(item) {
-    const s = document.createElement('select');
-    s.className = 'mv'; s.title = 'Przenieś do kategorii'; s.setAttribute('aria-label', 'Przenieś do kategorii');
-    s.append(new Option('⇄', ''));
-    cats.forEach(c => s.append(new Option(c.name, c.name)));
-    s.append(new Option('+ Nowa kategoria…', '__new'));
-    s.onclick = e => e.stopPropagation();
-    s.onchange = () => {
-      let val = s.value;
-      if (val === '__new') val = (prompt('Nazwa nowej kategorii:') || '').trim();
-      if (val) moveItem(item, val); else render();
-    };
-    return s;
-  }
-
-  function render() {
-    // lista kategorii
-    listEl.innerHTML = '';
-    cats.forEach((c, ci) => {
-      const sec = document.createElement('section');
-      sec.className = 'cat';
-      sec.addEventListener('dragover', e => { if (dragItem) { e.preventDefault(); sec.classList.add('over'); } });
-      sec.addEventListener('dragleave', e => { if (!sec.contains(e.relatedTarget)) sec.classList.remove('over'); });
-      sec.addEventListener('drop', e => {
-        if (!dragItem) return;
-        e.preventDefault(); e.stopPropagation(); sec.classList.remove('over');
-        const it = dragItem; dragItem = null; moveItem(it, c.name);
-      });
-
-      const head = document.createElement('div'); head.className = 'cat-head';
-      const tw = document.createElement('button');
-      tw.className = 'tw'; tw.textContent = c.collapsed ? '▸' : '▾';
-      tw.title = c.collapsed ? 'Rozwiń' : 'Zwiń'; tw.setAttribute('aria-expanded', String(!c.collapsed));
-      const toggle = () => { c.collapsed = !c.collapsed; render(); };
-      tw.onclick = toggle;
-      const name = document.createElement('span'); name.className = 'cat-name'; name.textContent = c.name; name.onclick = toggle;
-      const count = document.createElement('span'); count.className = 'cat-count'; count.textContent = c.items.length;
-      head.append(tw, name, count,
-        icon('▲', 'Przesuń kategorię w górę', () => shiftCat(c, -1), ci === 0),
-        icon('▼', 'Przesuń kategorię w dół', () => shiftCat(c, 1), ci === cats.length - 1),
-        icon('✎', 'Zmień nazwę kategorii', () => renameCat(c)),
-        icon('✕', 'Usuń kategorię', () => deleteCat(c)));
-      sec.append(head);
-
-      if (!c.collapsed) {
-        const ol = document.createElement('ol'); ol.className = 'items';
-        c.items.forEach(it => {
-          const li = document.createElement('li');
-          if (it === cur) li.classList.add('active');
-          li.tabIndex = 0; li.draggable = true;
-          li.addEventListener('dragstart', e => { dragItem = it; li.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', it.name); });
-          li.addEventListener('dragend', () => { dragItem = null; li.classList.remove('dragging'); });
-          const n = document.createElement('span'); n.className = 'name'; n.textContent = it.name;
-          const rm = document.createElement('button'); rm.className = 'rm'; rm.textContent = '×'; rm.title = 'Usuń z listy';
-          rm.onclick = e => { e.stopPropagation(); removeItem(it); };
-          li.append(n, moveSelect(it), rm);
-          li.onclick = () => play(it);
-          li.onkeydown = e => { if (e.key === 'Enter' && e.target === li) play(it); };
-          ol.append(li);
-        });
-        sec.append(ol);
-      }
-      listEl.append(sec);
-    });
-
-    // wybór kategorii docelowej przy dodawaniu
-    const t = $('target'), prev = t.value;
-    t.innerHTML = '';
-    t.append(new Option('Automatycznie (według folderu)', ''));
-    cats.forEach(c => t.append(new Option(c.name, c.name)));
-    t.value = cats.some(c => c.name === prev) ? prev : '';
-
-    const total = flat().length;
-    $('title').textContent = 'Lista odtwarzania' + (total ? ' (' + total + ')' : '');
-    empty.style.display = cur ? 'none' : 'grid';
-    save();
-  }
-
-  /* ---------- zdarzenia ---------- */
-  v.addEventListener('ended', () => {
-    const all = flat();
-    if ($('loop').checked && all.length === 1) { v.currentTime = 0; v.play(); return; }
-    if (!$('auto').checked) return;
-    const i = all.indexOf(cur);
-    if (i >= 0 && i + 1 < all.length) play(all[i + 1]);
-    else if ($('loop').checked && all.length) play(all[0]);
-  });
-  v.addEventListener('error', () => {
-    say('Nie można odtworzyć tego pliku. Przeglądarka może nie obsługiwać jego formatu lub kodeka (np. MKV/AVI).');
-  });
-
-  $('files').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
-  $('folder').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
-  $('prev').onclick = () => playRel(-1);
-  $('next').onclick = () => playRel(1);
-  $('speed').onchange = e => { v.playbackRate = +e.target.value; e.target.blur(); };
-  const speeds = [...$('speed').options].map(o => +o.value);
-  v.addEventListener('ratechange', () => { $('speed').value = String(v.playbackRate); });
-  function stepSpeed(dir) {
-    let i = speeds.findIndex(s => s >= v.playbackRate - 1e-6);
-    if (i < 0) i = speeds.length - 1;
-    i = Math.max(0, Math.min(speeds.length - 1, i + dir));
-    v.playbackRate = speeds[i];
-    say('Prędkość: ' + speeds[i].toString().replace('.', ',') + '×');
-  }
-
-  $('clear').onclick = () => {
-    if (flat().length && !confirm('Wyczyścić całą listę i kategorie?')) return;
-    flat().forEach(i => i.blob && URL.revokeObjectURL(i.src));
-    cats = []; stop(); say(''); render();
-  };
-  const loadUrl = () => {
-    const val = $('url').value;
-    if (val.trim()) addUrl(val).catch(err => say(err.message));
-  };
-  $('load').onclick = loadUrl;
-  $('url').onkeydown = e => { if (e.key === 'Enter') loadUrl(); };
-
-  const createCat = () => {
-    const n = $('newcat').value.trim();
-    if (!n) return;
-    if (findCat(n)) { say('Kategoria „' + n + '” już istnieje.'); return; }
-    getCat(n); $('newcat').value = ''; say('Utworzono kategorię: ' + n);
-    render(); $('target').value = n;
-  };
-  $('addcat').onclick = createCat;
-  $('newcat').onkeydown = e => { if (e.key === 'Enter') createCat(); };
-
-  $('sortcats').onchange = e => {
-    const m = e.target.value;
-    const byName = (a, b) => collator.compare(a.name, b.name);
-    if (m === 'az') cats.sort(byName);
-    if (m === 'za') cats.sort((a, b) => byName(b, a));
-    if (m === 'many') cats.sort((a, b) => b.items.length - a.items.length || byName(a, b));
-    if (m === 'few') cats.sort((a, b) => a.items.length - b.items.length || byName(a, b));
-    e.target.value = ''; if (m) say('Posortowano kategorie.'); render();
-  };
-  $('sortitems').onchange = e => {
-    const m = e.target.value;
-    cats.forEach(c => c.items.sort((a, b) => m === 'za' ? collator.compare(b.name, a.name) : collator.compare(a.name, b.name)));
-    e.target.value = ''; if (m) say('Posortowano filmy w każdej kategorii.'); render();
-  };
-  $('collapse').onclick = () => {
-    const anyOpen = cats.some(c => !c.collapsed);
-    cats.forEach(c => c.collapsed = anyOpen);
-    render();
-  };
-
-  // przeciąganie plików z komputera na okno (nie myli się z przenoszeniem filmów na liście)
-  const isFiles = e => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
-  let depth = 0;
-  addEventListener('dragenter', e => { if (!isFiles(e)) return; e.preventDefault(); depth++; document.body.classList.add('drag'); });
-  addEventListener('dragleave', e => { if (!isFiles(e)) return; if (--depth <= 0) { depth = 0; document.body.classList.remove('drag'); } });
-  addEventListener('dragover', e => { if (isFiles(e)) e.preventDefault(); });
-  addEventListener('drop', e => {
-    if (!isFiles(e)) return;
-    e.preventDefault(); depth = 0; document.body.classList.remove('drag');
-    if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
-  });
-
-  // skróty klawiszowe
-  addEventListener('keydown', e => {
-    if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName) && e.target.type !== 'checkbox') return;
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    switch (e.key) {
-      case ' ': if (e.target.tagName === 'BUTTON') return; e.preventDefault(); v.paused ? v.play() : v.pause(); break;
-      case 'ArrowRight': e.preventDefault(); v.currentTime += 10; break;
-      case 'ArrowLeft': e.preventDefault(); v.currentTime -= 10; break;
-      case 'ArrowUp': e.preventDefault(); v.volume = Math.min(1, v.volume + 0.1); break;
-      case 'ArrowDown': e.preventDefault(); v.volume = Math.max(0, v.volume - 0.1); break;
-      case 'f': case 'F': document.fullscreenElement ? document.exitFullscreen() : v.requestFullscreen?.(); break;
-      case 'm': case 'M': v.muted = !v.muted; break;
-      case ']': case '>': stepSpeed(1); break;
-      case '[': case '<': stepSpeed(-1); break;
-      case '\\': v.playbackRate = 1; say('Prędkość: 1×'); break;
-      case 'n': case 'N': playRel(1); break;
-      case 'p': case 'P': playRel(-1); break;
-    }
-  });
-
-  restore();
-  render();
-  // ?src=/filmy/ w adresie strony wczyta katalog lub plik od razu
-  new URLSearchParams(location.search).getAll('src').forEach(s => addUrl(s).catch(err => say(err.message)));
-  // pierwsza wizyta: jeśli obok strony leży playlist.json, wczytaj go automatycznie
-  if (!flat().length) addManifest(new URL('playlist.json', location.href), true).catch(() => {});
+  }catch(err){res.innerHTML='<div class="empty">Błąd wyszukiwania.</div>'}
+};
 })();
 </script>
 </body>
